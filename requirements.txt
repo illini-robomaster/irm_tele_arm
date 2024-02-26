@@ -1,6 +1,4 @@
-opencv-python
 pylint
-scipy
-ipython
 pyserial
 crc
+numpy

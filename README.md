@@ -1,65 +1,74 @@
-# iRM_Vision_2023
+# irm_tele_arm
+Embedded system development @ Illini RoboMaster
+## Setup (GNU/Linux with systemd)
+Have the following on your system:
+- `python3` (Tested on 3.10+)
+- `udevadm`
+- `systemd` [Recommended]
+- `tmux` [Recommended]
 
-repo for iRM vision.
 
-## Contributing
+Get under your cloned directory.
+1. Make sure you have correct serial port access permissions (by group membership or otherwise). For Debian-based systems, this would be the `dialout` group.
+- Check your current memberships.
+    ```sh
+    groups $USER
+    ```
+    - Debian/Ubuntu
+    ```sh
+    sudo usermod -aG dialout $USER
+    ```
+    - Arch
+    ```sh
+    sudo usermod -aG uucp $USER
+    ```
+2. Modify the `*_ID_SERIAL_SHORT` variable(s) in `config.py` based on your the serial id(s) of your device(s). To find the id of a device on `/path/to/serial`, run
+    ```sh
+    udevadm info -q property '/path/to/serial' | awk -F= '/^ID_SERIAL_SHORT/ { print $2 }'
+    ```
+3. Create a python venv (in this case named `venv`) and install the requirements.
+   ```sh
+   python3 -m venv venv
+   pip3 install -r requirements.txt
+   ```
+4. [Recommended] If you want `minipc.py` to be able to run in the background for easier debugging/testing, see `minipc-tmux-daemon-helper.sh`. Run it without arguments for help and details. If you don't want to read run
+    ```sh
+    ./minipc-tmux-daemon-helper.sh -i install
+    ```
+    for an interactive installation.
 
-Now the repo uses CI to check code style. We decided pylint is too painful to use.
-Instead we use `pycodestyle` and `pydocstyle` to check if the code conform to autopep8
-and doc standards.
-
-Code that fails the CI will **NOT** be merged.
-
-To check if your code is conform to the standard, run
-
-```bash
-pycodestyle --max-line-length=100 .
-pydocstyle .
+## Usage
+For options, run
+```sh
+python3 minipc.py -h
 ```
-
-These two tools can be installed from either pip or anaconda.
-
-The CI will also tell if your code is failing, but please don't rely on repeatedly submitting
-commits to check your coding style.
-
-To automatically fix your code to autopep8 standard, you can run
-
-```bash
-autopep8 --in-place --aggressive --aggressive --max-line-length=100 --exclude="mvsdk.py" --recursive .
+Assuming you have set up the tmux daemon in the previous section (read the help first!),
+```sh
+# Start the service.
+# You can omit `.service'.
+# You may want to alias `systemd --user' to something shorter.
+systemd --user start minipctd.service
 ```
-
-## Data preparing
-
-We recorded some demo videos to demo auto-aiming capabilities of our robots,
-which is located under the folder `./large_data/`.
-However, due to the large sizes of the video, it's inappropriate to directly
-upload them to GitHub. Hence, to acquire theese sample videos, please download
-them at the [UofI box](https://uofi.box.com/s/i6zahotr9id35hurjzy2bq3dcfz0085e).
-
-## Dependencies
-
-Please follow instruction from the RMCV101 repo [here](https://github.com/illini-robomaster/RM_CV_101/blob/master/INSTALL.md).
-
-## TODOs
-
-- Implement a more robust tracker (e.g., EKF / Kalman)
-- Implement depth estimators (either use D455 or estimate from monocular cameras)
-- Optimize code efficiency on Jetson
-- Update building instruction for getting video files / MDVS SDK
-
-## File Structure
-
+After starting the service,
+```sh
+# Connect to the tmux section.
+# You definitely want to alias this to something shorter.
+tmux -L mtd attach -t mtd
 ```
-- Aiming/              --> code needed aiming target armor
-    - tracking/        --> Keep code for tracking here
-- Camera/              --> Camera utils
-- Communication/       --> Keep code for communication to chassis here
-- Detection/           --> Yolo code
-- Utils/               --> misc.
-- vision.py            --> vision driver
-- config.py            --> global config (parameters and class instance)
+More keybinds are detailed in `minipc-tmux-daemon-helper.sh`. `Alt+f d` to detach, `Alt+f z` to kill.
+```sh
+systemctl --user {restart,stop} minipctd.service
 ```
+do what you expect, and
+```sh
+systemctl --user reload minipctd.service
+```
+sends Ctrl+c (`C-c`) to the tmux session, which the job control handles by restarting `minipc.py`. This means in the tmux session you can restart `minipc.py` manually with `C-c`.
 
-## CHANGLELOG
-
-2023-02-14 v0.0.1 release for 2023 season midterm. See notes [here](https://github.com/illini-robomaster/iRM_Vision_2023/pull/1).
+## Reminders
+1. Hardware
+- If you are using something other than STM32 STLink you may have to modify the `UART_PREFIX_LIST` variable in `Communication/communicator.py`
+- The `uucp` group does not seem to work with `/dev/serial/by-id` (at least for me).
+2. Init
+- If you do not use systemd, you may have to find a replacement for `udevadm` and modify `Communication/communicator.py` accordingly.
+- If you do not use systemd, the service is trivial (starts, stops and sends `C-c` to a tmux session). Rewriting should be simple. Starting the tmux session manually is also an option. The service file can be found inside the `install` function of `minipc-tmux-daemon-helper.sh`.
