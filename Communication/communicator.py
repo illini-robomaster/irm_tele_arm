@@ -740,7 +740,7 @@ class ARMCommunicator(Communicator):
         return os.path.exists(port)
 
     def is_vacuum(self) -> bool:
-        return self.is_valid()
+        return not self.is_valid()
 
     def is_alive(self) -> Optional[bool]:
         port = self.get_port()
