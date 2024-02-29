@@ -1,3 +1,4 @@
+from enum import Enum, IntEnum
 # ========== Communication ==========
 PACK_START = b'ST'
 PACK_END = b'ED'
@@ -43,8 +44,21 @@ DATA_OFFSET = CMD_ID_OFFSET + 1
 # `udevadm` short serial id of the small arm motors
 ARM_ID_SERIAL_SHORT = 'FT8ISULT'
 
-# ========== DEBUGGING ==========
 
+# UART > 0, USB <= 0
+class DeviceType(IntEnum):
+    UART = 1  # reserved for portless uart
+    BRD = 2  # board
+
+    USB = 0  # reserved for portless uart
+    SPM = -1  # spacemouse
+    ARM = -2  # small arm
+
+
+# ========== DEBUGGING ==========
 DEBUG_DISPLAY = True
 DEBUG_PRINT = False
 DEFAULT_ENEMY_TEAM = 'red'
+
+if __name__ == '__main__':
+    print(dir())

@@ -1,6 +1,6 @@
 #!/bin/bash
 HELP=$(cat << EOF
-Usage: $(basename "$0") [options] {install,clean,reinstall}
+Usage: $(basename "$0") [options] {[i]nstall,[c]lean,[r]einstall}
 
   -h, --help            Show this message
   -t, --tmux-dir        Set tmux directory
@@ -44,7 +44,7 @@ TMUX_DIR=${CONF_DIR}/tmux
 SYSTEMD_DIR=${CONF_DIR}/systemd/user
 MINIPC_DIR=$PWD
 MINIPC_VENV=venv/bin/activate
-MINIPC_TARGET=minipc.py
+MINIPC_TARGET=main.py
 UMASK_MODE=0022
 user_tmux_dir=
 user_systemd_dir=
@@ -166,7 +166,7 @@ Description=minipctd
 
 [Service]
 Type=forking
-ExecStart=/bin/tmux -f "${f_tmuxconf}" -L mtd new-ses -s mtd -n minipctd -c "${user_minipc_dir}" -d -- "${script_file}" jobcontrol "${user_minipc_venv}" "${user_minipc_target}" --skip-tests --verbosity INFO
+ExecStart=/bin/tmux -f "${f_tmuxconf}" -L mtd new-ses -s mtd -n minipctd -c "${user_minipc_dir}" -d -- "${script_file}" jobcontrol "${user_minipc_venv}" "${user_minipc_target}" --dummy --skip-tests --verbosity INFO
 ExecStop=/usr/bin/tmux -L mtd kill-ses
 ExecReload=/usr/bin/tmux -L mtd send-keys C-c
 
@@ -273,23 +273,26 @@ function clean() {
 }
 
 function jobcontrol() {
+    #echo $@
+    echo Job started $(date)
     job_venv=$1
     job_target=$2
-    shift 2
+    job_mode=${3:---dummy}
+    shift 3
     source "${job_venv}" && \
-        /usr/bin/env python3 -O "${job_target}" "$@"
+        /usr/bin/env python3 -O "${job_target}" "${job_mode}" "$@"
     returncode=$?
     # Restart if killed with C-c
     if [ ${returncode} -eq 130 ]; then
         deactivate
         clear
-        jobcontrol "${job_venv}" "${job_target}" "$@"
+        jobcontrol "${job_venv}" "${job_target}" --display-menu "$@"
     else
         deactivate
-        clear
-        echo Not killed with C-c, sleeping for 1s.
+        echo Not killed with C-c, restarting in 1s.
         sleep 1
-        jobcontrol "${job_venv}" "${job_target}" "$@"
+        clear
+        jobcontrol "${job_venv}" "${job_target}" --dummy "$@"
     fi
 }
 
@@ -316,13 +319,13 @@ function run() {
             -i|--interactive)
                 interactive=1;
                 shift;;
-            install)
+            i|install)
                 install ${interactive};
                 shift;;
-            clean)
+            c|clean)
                 clean ${interactive};
                 shift;;
-            reinstall)
+            r|reinstall)
                 reinstall=1
                 clean ${interactive} ${reinstall};
                 install ${interactive};

@@ -34,6 +34,7 @@ CLEAR = '\033[2K'
 
 
 if __name__ == '__main__':
+    print(dir())
     print(BLACK + f'{BLACK=}' + RESET, end='\t')
     print(DARKGRAY + f'{DARKGRAY=}' + RESET, end='\t')
     print(DARKGREY + f'{DARKGREY=}' + RESET)
