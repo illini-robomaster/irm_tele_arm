@@ -42,7 +42,7 @@ CMD_ID_OFFSET = DATA_LENGTH_OFFSET + 1
 DATA_OFFSET = CMD_ID_OFFSET + 1
 
 # `udevadm` short serial id of the small arm motors
-ARM_ID_SERIAL_SHORT = 'FT8ISULT'
+ARM_ID_SERIAL_SHORT = 'FT8ISULT'  # /dev/serial/by-id
 
 
 # UART > 0, USB <= 0
