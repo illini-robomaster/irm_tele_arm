@@ -99,12 +99,13 @@ def test_board_latency(uart, logger,
             'loss': (loss, loss / rounds),
             'detailed': [*zip(statuses, latencies)]}
 
+#
 # rx/tx test by yhy modified by richard, flash example/minipc/pingpongtest.cc
-# this ping pong test first trys to send a packet
+# this ping pong test first tries to send a packet
 # and then attmepts to read the response from stm32 for 10 seconds
 # then send a second packet
 # after that entering ping pong mode:
-#   receive packet from stm32, rel_pitch += 1 then immediately send back
+#   receive packet from stm32, debug_int += 1 then immediately send back
 # each "ping pong" has a id for differentiating during pingping-ing
 # todo: this test shows the issue that a response can only be received after the data
 # in circular_buffer is at least the maximum size of a packet (stj_max_packet_size).
@@ -116,7 +117,9 @@ def test_board_latency(uart, logger,
 # then the first packet will be parsed.
 # if a data type is 10 bytes long then sending a third packet is necessary
 # before pingpong
-# modified by austin
+#
+# Modified by Austin.
+#
 def test_board_pingpong(uart, logger,
                         rounds=5, timeout=1, hz=200,
                         listening=True, verbose=True):
@@ -167,16 +170,11 @@ def test_board_pingpong(uart, logger,
 
     sent, received = send_recv_packets(rounds, timeout, hz)
 
+#
 # rate test by roger modified by richard, flash example/minipc/stresstesttypec.cc
-# modified by austin.
-# todo: currently this test will never receive full 1000 packets
-#    but only 998 packets because the last two packets
-#    remain in circular buffer and not parsed because
-#    its size is not reaching stj_max_packet_size
-# note: please reflash or restart program on stm32 every time you want to run this test
-# todo: notify the board and use color packets instead?
-
-
+#
+# Modified by Austin.
+#
 def test_board_crc(uart, logger,
                    rounds=15, timeout=1, hz=200,
                    listening=True, verbose=True):

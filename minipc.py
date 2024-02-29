@@ -1,5 +1,23 @@
 #!/usr/bin/env python3
-""" Will document later :)
+"""To add a test:
+    - Add test into `communication/tests.py'.
+    - Include the test in `startup_tests` in `minipc.py'.
+    - Add the test into the argparse in `minipc.py` and add an octal
+      identification number. Document in the epilog in `minipc.py` and
+      `__main__.py` (which extends `minipc' argparse).
+To add a new device:
+    - Add the DeviceType in `config.py'
+    - Add a communicator in `communication/communicator.py' with `Communicator'
+      as its parent.
+    - Modify 'global' variables in `minipc.py' accordingly.
+    - Include it in `serial_devices` in `minipc.py'.
+    - Include it in `UnifiedCommunicator.get_communicator`.
+To change functionality:
+    - Add a runmode in `communication/runmode.py'. Use functionality in
+      UnifiedCommunicator.
+    - Add the test into the argparse in `__main__.py' and modify
+      `communication/menu.py' accordingly. Document in the epilog of
+      `__main__.py`.
 """
 import sys
 import time
@@ -101,6 +119,7 @@ def minipc_parser():
 
 def set_up_loggers(
         loggers: List[logging.Logger], verbosity) -> None:
+    """Takes a list of loggers and sets handler and verbosity."""
     ch = logging.StreamHandler()
     ch.setFormatter(cl.ColorFormatter())
     for lgr in loggers:
@@ -115,7 +134,9 @@ def set_up_loggers(
 # use only.
 #
 class UnifiedCommunicator:
-    """Containing general communication and identification methods"""
+    """Contains general communication and identification methods.
+    This is expected to be provided to all runmodes.
+    """
     def __init__(self,
                  config,
                  logger,
@@ -291,6 +312,10 @@ UC = UnifiedCommunicator(config=config,
                          unified_state=unified_state)
 
 def _identifier(hz_uart=2, hz_usb=2) -> None:
+    """Watches the id queue. If there are devices waiting to be identified,
+    attempt to do so. After identification the Communicator is passed to the
+    listen queue.
+    """
     global UC
 
     def get_id_queue() -> AtomicList:
@@ -308,6 +333,9 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
         listen_queue += [(dev_type, device)]
 
     def _id_uart(hz):
+        """Identify UART devices by polling with an ID request. Response is
+        implemented on the UART device.
+        """
         serial_experiments = []
         paths, prev_paths = [set()] * 2
 
@@ -370,6 +398,9 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
             time.sleep(1 / hz)
 
     def _id_usb(hz):
+        """Identify USB devices by checking their serial ID against known
+        serial IDs in `config.py' with `udevadm`.
+        """
         arm_cycle = itertools.repeat(ARM)
         spm_cycle = itertools.repeat(SPM)
         serial_experiments = []
@@ -446,6 +477,9 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
 # Communicator objects (in `serial_devices') themselves.
 #
 def _listener(hz_pull=4, hz_push=200):
+    """Pulls devices from the listen queue and sets them to start listening.
+    Reads the state of the Communicator and pushes it to `unified_state`.
+    """
     global UC
 
     def get_listen_queue() -> AtomicList:
@@ -469,6 +503,7 @@ def _listener(hz_pull=4, hz_push=200):
         UC.delist_device(device)
 
     def _queue_puller(hz):
+        """Set devices in queue to listen mode."""
         while True:
             # Listen on and assign new devices
             listen_queue = get_listen_queue()
@@ -492,6 +527,7 @@ def _listener(hz_pull=4, hz_push=200):
             time.sleep(1 / hz)
 
     def _state_pusher(hz):
+        """Read from named Communicators in `serial_devices`."""
         for dev_type, dev in serial_devices.items():
             if dev is None or not dev.is_vacuum:
                 unified_state.setdefault(dev_type, dict())
@@ -530,6 +566,7 @@ def _listener(hz_pull=4, hz_push=200):
 
 
 def _sender(hz=200):
+    """Sends packets in send queue to their destinations."""
     global UC
 
     def takeone_from_send_queue() -> bytes:
@@ -553,6 +590,7 @@ def _sender(hz=200):
 # Convert octal to binary representation and run tests.
 #
 def startup_tests(verb: oct = 0o4, hz=4) -> None:
+    """Run startup tests from `communication.tests'."""
     global UC
     testable: List[Tuple[Callable, DeviceType]] = [
         (tests.test_board_crc, BRD),       # 0o1
@@ -586,6 +624,7 @@ def startup_tests(verb: oct = 0o4, hz=4) -> None:
 
 
 def main(args):
+    """The main function. Can be exported."""
     global UC
     # Set up logging.
     set_up_loggers(loggers, args.verbosity)

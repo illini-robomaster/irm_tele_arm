@@ -9,9 +9,11 @@ from util.ansi import *
 from util.timedinput import timedinput, TimedOut
 
 class NothingEnum(Enum):
+    """Does not match MenuCode."""
     NOTHING = None
 
 class MenuCode(Enum):
+    """Menu codes."""
     ARMONLY = '1'
     SPMONLY = '2'
     BOTHA = '3'
