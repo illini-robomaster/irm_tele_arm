@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 from sys import argv
 
@@ -26,20 +27,11 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(
         parents=[parent_ap],
         add_help=False,
-        description='Control script for minipc',
-        prog='minipc.py',
+        description=parent_ap.description,
+        prog=parent_ap.prog,
         formatter_class=argparse.RawTextHelpFormatter,
-        epilog='Tests:\n'
-        'test_board_latency:0o4\t'
-        'test_board_pingpong:0o2\n'
-        'test_board_crc:0o1\n'
-        'Modes:\n'
-        'arm_only:a\t\tspacemouse_only:s\n'
-        'both_arm_priority:ba\tboth_spm_priority:bs')
+        epilog=parent_ap.epilog)
 
-    ap.add_argument('-m', '--mode',
-                    action='store',
-                    help='operating mode; see menu')
     ap.add_argument('-d', '--display-menu',
                     action='store_true',
                     help='display the menu')

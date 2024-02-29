@@ -34,19 +34,20 @@ from typing import Optional, Union, \
 
 import config
 from config import DeviceType
-from util import color_logging as cl
+
+from util import colorlog as cl
 from util.ansi import *
 from util.matchall import MatchAll
 from util.atomiclist import AtomicList
 
 from communication import tests
 from communication import runmode
-from communication.menu import MenuCode
+from communication.menu import get_code, MenuCode
 from communication.communicator import Communicator, \
     UARTCommunicator, ARMCommunicator, SPMCommunicator, \
     StateDict, MiniPCCommunicationError
 
-_m = MatchAll()
+_mt = MatchAll(True)
 
 # Add loggers here
 loggers = [logger := logging.getLogger(__name__),
@@ -87,14 +88,22 @@ def minipc_parser():
     parsed_args.test: 'octal'                         (d. '0o4')
     parsed_args.skip_tests: boolean
     parsed_args.test_only: boolean
+    parsed_args.mode: str
     """
-    ap = argparse.ArgumentParser(description='Control script for minipc',
-                                 prog='minipc.py',
-                                 formatter_class=argparse.RawTextHelpFormatter,
-                                 epilog='Tests:\n'
-                                 'test_board_latency:0o4\t'
-                                 'test_board_pingpong:0o2\n'
-                                 'test_board_crc:0o1)')
+    ap = argparse.ArgumentParser(
+        description='Control script for minipc',
+        prog='minipc.py',
+        formatter_class=argparse.RawTextHelpFormatter,
+        epilog='TEST values:\n'
+        '  test_board_latency:  0o4\n'
+        '  test_board_pingpong: 0o2\n'
+        '  test_board_crc: ---- 0o1\n'
+        'MODE values:\n'
+        '  arm_only: ---------- a\n'
+        '  spacemouse_only: --- s\n'
+        '  both_arm_priority: - ba\n'
+        '  both_spm_priority: - bs')
+
     # TODO: handle numeric verbosity
     ap.add_argument('-v', '--verbosity', '--verbose',
                     action='store',
@@ -109,6 +118,9 @@ def minipc_parser():
     ap.add_argument('--test-only',
                     action='store',
                     help='exit after completing tests')
+    ap.add_argument('-m', '--mode',
+                    action='store',
+                    help='operating mode; see menu')
     ap.add_argument('--version',
                     action='version',
                     version='%(prog)s 0.1')
@@ -318,19 +330,13 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
     """
     global UC
 
-    def get_id_queue() -> AtomicList:
-        global id_queue
-        return id_queue
-
     def free_from_id_queue(dev_type: DeviceType) -> None:
-        global id_queue
-        if dev_type in id_queue:
-            id_queue.remove(dev_type)
+        if dev_type in UC.id_queue:
+            UC.id_queue.remove(dev_type)
 
     def push_to_listen_queue(
             dev_type: DeviceType, device: Communicator) -> None:
-        global listen_queue
-        listen_queue += [(dev_type, device)]
+        UC.listen_queue += [(dev_type, device)]
 
     def _id_uart(hz):
         """Identify UART devices by polling with an ID request. Response is
@@ -349,8 +355,7 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
                            for dev in serial_devices.values()
                            if dev is not None
                            if not dev.is_vacuum()}
-            id_queue = get_id_queue()
-            if not any(map(UC.is_uart, id_queue)):
+            if not any(map(UC.is_uart, UC.id_queue)):
                 for dev in serial_experiments:
                     UC.delist_device(dev)
                 serial_experiments = []
@@ -378,8 +383,8 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
                 try:
                     UC._send_packet_dev(dev, packet)
                     UC._receive_uart_packet_dev(dev)
-                    received_packet = UC._read_packet_dev(dev)
-                    dev_type = received_packet['debug_int'] - 127
+                    received_data = UC._read_packet_dev(dev)
+                    dev_type = received_data['debug_int'] - 127
                 except Exception:
                     serial_experiments.remove(dev)
                     logger.info(
@@ -387,7 +392,7 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
                     UC.delist_device(dev)
                 else:
                     # Success.
-                    if dev_type in id_queue:
+                    if dev_type in UC.id_queue:
                         serial_experiments.remove(dev)
                         logger.info(f'Identified {UC.iename(dev_type)}, '
                                     f'pushing {dev} to listen queue.')
@@ -410,8 +415,7 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
                            for dev in serial_devices.values()
                            if dev is not None
                            if not dev.is_vacuum()}
-            id_queue = get_id_queue()
-            if not any(map(UC.is_usb, id_queue)):
+            if not any(map(UC.is_usb, UC.id_queue)):
                 for dev in serial_experiments:
                     UC.delist_device(dev)
                 serial_experiments = []
@@ -422,11 +426,11 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
             # Look for devices.
             # `list_*_device_paths` returns a list or [None]
             arm_paths, spm_paths = [set()] * 2
-            if ARM in id_queue:
+            if ARM in UC.id_queue:
                 arm_paths = set(
                         ARMCommunicator.list_arm_device_paths(
                             config.ARM_ID_SERIAL_SHORT)) - known_paths
-            if SPM in id_queue:
+            if SPM in UC.id_queue:
                 spm_paths = set() - known_paths
 
             paths = set.union(arm_paths, spm_paths)
@@ -482,17 +486,11 @@ def _listener(hz_pull=4, hz_push=200):
     """
     global UC
 
-    def get_listen_queue() -> AtomicList:
-        global listen_queue
-        return listen_queue
-
     def free_from_listen_queue(dev_type: DeviceType) -> None:
-        global listen_queue
-        listen_queue.filter_in_place(lambda el: el[0] != dev_type)
+        UC.listen_queue.filter_in_place(lambda el: el[0] != dev_type)
 
     def push_to_id_queue(dev_type: DeviceType) -> None:
-        global id_queue
-        id_queue += [dev_type]
+        UC.id_queue += [dev_type]
 
     def assign_device(dev_type: DeviceType, device: Communicator) -> None:
         serial_devices[dev_type] = device
@@ -506,8 +504,7 @@ def _listener(hz_pull=4, hz_push=200):
         """Set devices in queue to listen mode."""
         while True:
             # Listen on and assign new devices
-            listen_queue = get_listen_queue()
-            for dev_type, dev in listen_queue:
+            for dev_type, dev in UC.listen_queue:
                 try:
                     dev.start_listening()
                     assign_device(dev_type, dev)
@@ -537,8 +534,8 @@ def _listener(hz_pull=4, hz_push=200):
                 if dev is not None:
                     if not dev.is_vacuum():
                         try:
-                            packet = UC._read_packet(dev_type)
-                            unified_state.update({dev_type: packet})
+                            received_data = UC._read_packet(dev_type)
+                            unified_state.update({dev_type: received_data})
                         except MiniPCCommunicationError:
                             logger.error('Lost connection to '
                                          f'{UC.iename(dev_type)}, deassigning '
@@ -551,7 +548,7 @@ def _listener(hz_pull=4, hz_push=200):
                                   f'{RED}{UC.fdev(dev_type)}{RESET}')
                 else:
                     if dev_type not in id_queue and \
-                            (dev_type, _m) not in listen_queue:
+                            (dev_type, _mt) not in UC.listen_queue:
                         logger.info(f'Pushing {UC.iename(dev_type)} '
                                     'to identification queue.')
                         push_to_id_queue(dev_type)
@@ -653,42 +650,44 @@ def main(args):
     if args.test_only:
         exit(0)
 
-    # Program
-    if __name__ != '__main__':
-        match args.mode:
-            case MenuCode.ARMONLY:
-                runmode.arm_only(UC)
-            case MenuCode.SPMONLY:
-                runmode.spm_only(UC)
-            case MenuCode.BOTHA:
-                runmode.both_arm_priority(UC)
-            case MenuCode.BOTHS:
-                runmode.both_spm_priority(UC)
-            case MenuCode.TESTL:
-                startup_tests(0o4)
-                input(f'=> ({GREEN}ENTER{RESET} to continue) ')
-            case MenuCode.TESTP:
-                startup_tests(0o2)
-                input(f'=> ({GREEN}ENTER{RESET} to continue) ')
-            case MenuCode.TESTC:
-                startup_tests(0o1)
-                input(f'=> ({GREEN}ENTER{RESET} to continue) ')
-            case MenuCode.EXIT130:
-                exit(130)
-            case _:
-                runmode.arm_only(UC)
-    else:
-        runmode.example(UC)
+    mode = get_code(args.mode)
+    logger.info(f'Runmode {runmode}')
 
+    # Program
+    match mode:
+        case MenuCode.ARMONLY:
+            runmode.arm_only(UC)
+        case MenuCode.SPMONLY:
+            runmode.spm_only(UC)
+        case MenuCode.BOTHA:
+            runmode.both_arm_priority(UC)
+        case MenuCode.BOTHS:
+            runmode.both_spm_priority(UC)
+        case MenuCode.TESTL:
+            startup_tests(0o4)
+            input(f'=> ({GREEN}ENTER{RESET} to continue) ')
+        case MenuCode.TESTP:
+            startup_tests(0o2)
+            input(f'=> ({GREEN}ENTER{RESET} to continue) ')
+        case MenuCode.TESTC:
+            startup_tests(0o1)
+            input(f'=> ({GREEN}ENTER{RESET} to continue) ')
+        case MenuCode.EXIT130:
+            exit(130)
+        case _:
+            runmode.default(UC)
 
 if __name__ == '__main__':
+    #print(dir())
     # Remove first arg if called with python.
     _sl = slice(2, None) if 'python' in sys.argv[0] \
         else slice(1, None)
     ap = minipc_parser()
     parsed_args = ap.parse_args(sys.argv[_sl])
     try:
-        print(dir())
         main(parsed_args)
     except KeyboardInterrupt:
+        logger.debug('Caught KeyboardInterrupt')
         exit(130)
+    finally:
+        logger.info('I have died.')

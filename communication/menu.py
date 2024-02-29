@@ -12,6 +12,7 @@ class NothingEnum(Enum):
     """Does not match MenuCode."""
     NOTHING = None
 
+# TODO: Include both parameters
 class MenuCode(Enum):
     """Menu codes."""
     ARMONLY = '1'
@@ -39,7 +40,10 @@ EXIT130 = MenuCode.EXIT130
 
 DEFAULT = ARMONLY
 
-def getcode(x, timedout=DEFAULT, default=DEFAULT, none=NOTHING):
+def get_code(x, timedout=DEFAULT, default=DEFAULT, none=NOTHING):
+    # Fall through
+    if isinstance(x, MenuCode):
+        return x
     match x:
         case 'a' | ARMONLY.value:
             ret = ARMONLY
@@ -81,7 +85,7 @@ def menu() -> MenuCode:
     print()
     print(f'=> {YELLOW}r{RESET} or {BLUE}{EXIT130.value}{RESET}: exit(130)', dr)
     print('==> Hint: you use these codes on the previous menu.')
-    choice = getcode(input('=> '))
+    choice = get_code(input('=> '))
 
     return choice
 
@@ -89,7 +93,7 @@ def timedmenu() -> MenuCode:
     # Exit on timeout
     print('==> Falling to default in one second...')
     response = timedinput(1, f'=> ({GREEN}RETURN{RESET} to enter menu) ')
-    code = getcode(response, default=NOTHING)
+    code = get_code(response, default=NOTHING)
     # Or do something if the code is valid
     if code in MenuCode:
         return code

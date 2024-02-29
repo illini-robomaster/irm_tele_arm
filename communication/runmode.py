@@ -1,5 +1,8 @@
 import time
 
+def default(UC):
+    arm_only(UC)
+
 def example(UC):
     UART = UC.UART
     USB = UC.USB

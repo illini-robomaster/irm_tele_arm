@@ -7,12 +7,12 @@ from util.ansi import *
 
 
 class ColorFormatter(logging.Formatter):
-    format0 = "%(asctime)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
-    format1 = "%(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+    format0 = "%(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+    format1 = "%(asctime)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
     format2 = "%(asctime)s - %(name)s: %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
 
     FORMATS = {
-        logging.DEBUG: LIGHTGREY + format0 + RESET,
+        logging.DEBUG: LIGHTGREY + format1 + RESET,
         logging.INFO: LIGHTGREY + format0 + RESET,
         logging.WARNING: YELLOW + format1 + RESET,
         logging.ERROR: RED + format2 + RESET,
