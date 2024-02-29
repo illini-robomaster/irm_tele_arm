@@ -66,7 +66,7 @@ def minipc_parser():
     parsed_args.verbosity: [DEBUG, INFO, WARNING, ERROR, CRITICAL]
                                                       (default WARNING,
                                                        w/o arg INFO)
-    parsed_args.test: 'octal'                         (d. '0o10')
+    parsed_args.test: 'octal'                         (d. '0o4')
     parsed_args.skip_tests: boolean
     parsed_args.test_only: boolean
     """
@@ -74,17 +74,16 @@ def minipc_parser():
                                  prog='minipc.py',
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  epilog='Tests:\n'
-                                 'test_board_latency:0o10\t'
-                                 'test_board_pingpong:0o4\n'
-                                 'test_board_crc:0o2\t'
-                                 'test_board_typea:0o1')
+                                 'test_board_latency:0o4\t'
+                                 'test_board_pingpong:0o2\n'
+                                 'test_board_crc:0o1)')
     # TODO: handle numeric verbosity
     ap.add_argument('-v', '--verbosity', '--verbose',
                     action='store',
                     default='WARNING',
                     nargs='?',
                     help='DEBUG, INFO, WARNING, ERROR, or CRITICAL')
-    ap.add_argument('-t', '--test', action='store', default='0o10',
+    ap.add_argument('-t', '--test', action='store', default='0o4',
                     help='takes an octal value; values below')
     ap.add_argument('-s', '--skip-tests',
                     action='store_true',
@@ -553,15 +552,14 @@ def _sender(hz=200):
 #
 # Convert octal to binary representation and run tests.
 #
-def startup_tests(verb: oct = 0o10, hz=4) -> None:
+def startup_tests(verb: oct = 0o4, hz=4) -> None:
     global UC
     testable: List[Tuple[Callable, DeviceType]] = [
-        (tests.test_board_typea, BRD),     # 0o1
-        (tests.test_board_crc, BRD),       # 0o2
-        (tests.test_board_pingpong, BRD),  # 0o4
-        (tests.test_board_latency, BRD),   # 0o10
+        (tests.test_board_crc, BRD),       # 0o1
+        (tests.test_board_pingpong, BRD),  # 0o2
+        (tests.test_board_latency, BRD),   # 0o4
     ]
-    # i.e. 0o16 => reversed('1110') will run test_board_{latency,pingpong,crc}
+    # i.e. 0o6 => reversed('110') will run test_board_{latency,pingpong}
     bits = map(int, reversed(bin(verb)[2:]))
     selected_tests = itertools.compress(testable, bits)
     # [d]ev_[t]ype, [dev]ice, [req]uired
@@ -580,7 +578,7 @@ def startup_tests(verb: oct = 0o10, hz=4) -> None:
         time.sleep(1 / hz)
     print('==> All devices attached, continuing.\n')
     try:
-        return [action(UC.fdev(dev_type))
+        return [action(UC.fdev(dev_type), logger)
                 for action, dev_type in selected_tests]
     except Exception as e:
         logger.error('Startup tests failed, exiting...')
@@ -628,11 +626,14 @@ def main(args):
             case MenuCode.BOTHS:
                 runmode.both_spm_priority(UC)
             case MenuCode.TESTL:
-                startup_tests(0o10)
-            case MenuCode.TESTP:
                 startup_tests(0o4)
-            case MenuCode.TESTC:
+                input(f'=> ({GREEN}ENTER{RESET} to continue) ')
+            case MenuCode.TESTP:
                 startup_tests(0o2)
+                input(f'=> ({GREEN}ENTER{RESET} to continue) ')
+            case MenuCode.TESTC:
+                startup_tests(0o1)
+                input(f'=> ({GREEN}ENTER{RESET} to continue) ')
             case MenuCode.EXIT130:
                 exit(130)
             case _:

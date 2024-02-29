@@ -261,27 +261,6 @@ def test_board_crc(uart, logger,
             'detailed': statuses}
 
 
-def test_board_typea(uart, logger,
-                     rounds=5, interval=1,
-                     verbose=True):
-    print('Communicator beginning minipc <-> board type a test: '
-          f'{rounds} rounds at {interval} intervals')
-    # vanilla send test, flash typea.cc
-    cur_packet_cnt = uart.parsed_packet_cnt
-    prv_parsed_packet_cnt = 0
-    for i in range(rounds):
-        cur_time = time.time()
-        while time.time() - cur_time < interval:
-            uart.try_read_one()
-            uart.packet_search()
-            if uart.parsed_packet_cnt > cur_packet_cnt:
-                cur_packet_cnt = uart.parsed_packet_cnt
-            time.sleep(0.001)
-        print("Parsed {} packets in 1 second.".format(
-            cur_packet_cnt - prv_parsed_packet_cnt))
-        prv_parsed_packet_cnt = cur_packet_cnt
-        cur_time = time.time()
-
 if __name__ == '__main__':
     print(dir())
     print('Run communication/communicator.py for unit tests')

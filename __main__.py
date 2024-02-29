@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parsed_args.verbosity: {DEBUG, INFO, WARNING, ERROR, CRITICAL}
                                                       (default WARNING,
                                                        w/o arg. INFO)
-    parsed_args.test: 'octal'                         (d. '0o10')
+    parsed_args.test: 'octal'                         (d. '0o4')
     parsed_args.skip_tests: boolean
     parsed_args.test_only: boolean
     parsed_args.mode: str
@@ -30,10 +30,9 @@ if __name__ == '__main__':
         prog='minipc.py',
         formatter_class=argparse.RawTextHelpFormatter,
         epilog='Tests:\n'
-        'test_board_latency:0o10\t'
-        'test_board_pingpong:0o4\n'
-        'test_board_crc:0o2\t'
-        'test_board_typea:0o1\n'
+        'test_board_latency:0o4\t'
+        'test_board_pingpong:0o2\n'
+        'test_board_crc:0o1\n'
         'Modes:\n'
         'arm_only:a\t\tspacemouse_only:s\n'
         'both_arm_priority:ba\tboth_spm_priority:bs')

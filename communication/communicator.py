@@ -815,7 +815,6 @@ if __name__ == '__main__':
         LATENCY = 1
         PINGPONG = 2
         CRC = 3
-        TYPE_A = 4
 
     # remove first arg if called with python.
     if 'python' in sys.argv[0]:
@@ -824,12 +823,12 @@ if __name__ == '__main__':
     testing = Test.LATENCY
     if len(sys.argv) > 1:
         testing = (Test.LATENCY, Test.PINGPONG,
-                   Test.CRC, Test.TYPE_A)[int(sys.argv[1]) - 1]
+                   Test.CRC,)[int(sys.argv[1]) - 1]
         print(f'\nUsing test type: {testing}')
     else:
         print(f'\nUsing default test type: {testing}')
     print("Change test type: ./communicator.py {1,2,3,4}")
-    print("1: LATENCY, 2: PINGPONG, 3: CRC, 4: TYPE_A\n")
+    print("1: LATENCY, 2: PINGPONG, 3: CRC\n")
 
     match testing:
         case Test.LATENCY:
@@ -838,7 +837,5 @@ if __name__ == '__main__':
             test_board_pingpong(uart, logger, listening=False)
         case Test.CRC:
             test_board_crc(uart, logger, listening=False)
-        case Test.TYPE_A:
-            test_board_typea(uart, logger, listening=False)
         case _:
             print("Invalid selection")
