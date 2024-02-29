@@ -22,3 +22,6 @@ class MatchAll:
 
     def __ge__(self, other):
         return self.ret
+
+if __name__ == '__main__':
+    print(dir())

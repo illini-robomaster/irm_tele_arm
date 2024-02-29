@@ -1,7 +1,9 @@
-# https://stackoverflow.com/a/56944275
+import os
+import sys
 import logging
-
-from .ansi import *
+if __name__ == '__main__':
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from util.ansi import *
 
 
 class ColorFormatter(logging.Formatter):
@@ -21,3 +23,6 @@ class ColorFormatter(logging.Formatter):
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
+
+if __name__ == '__main__':
+    print(dir())

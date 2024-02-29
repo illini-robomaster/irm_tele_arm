@@ -40,7 +40,7 @@ Get under your cloned directory.
 ## Usage
 For options, run
 ```sh
-python3 minipc.py -h
+python3 main.py -h
 ```
 Assuming you have set up the tmux daemon in the previous section (read the help first!),
 ```sh
@@ -63,7 +63,7 @@ do what you expect, and
 ```sh
 systemctl --user reload minipctd.service
 ```
-sends Ctrl+c (`C-c`) to the tmux session, which the job control handles by restarting `minipc.py`. This means in the tmux session you can restart `minipc.py` manually with `C-c`.
+sends Ctrl+c (`C-c`) to the tmux session, which the job control handles by restarting `main.py` (after a one second delay). This means in the tmux session you can restart `main.py` manually with `C-c`. The one second delay is to wait for possible user input, in which case the user is dropped into a control menu.
 
 ## Reminders
 1. Hardware

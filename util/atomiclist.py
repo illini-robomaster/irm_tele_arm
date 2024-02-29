@@ -159,6 +159,7 @@ class AtomicList:
 
 
 if __name__ == '__main__':
+    print(dir())
     al = AtomicList(99, 98, 97, 1, 2, 3)
     ll = iter(al)
     print(ll)
