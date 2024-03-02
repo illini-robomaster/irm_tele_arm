@@ -666,7 +666,7 @@ class UARTCommunicator(Communicator):
 
 class ARMCommunicator(Communicator):
 
-    def __init__(self, config, serial_dev_path, warn=True, in_use=None,):
+    def __init__(self, config, serial_dev_path, warn=True, in_use=None):
         self.config = config
         self.serial_dev_path = serial_dev_path
         self.in_use = in_use
@@ -676,8 +676,12 @@ class ARMCommunicator(Communicator):
         ids = [1, 2, 3, 4, 5, 6]
 
         if self.serial_dev_path is not None:
-            in_use += [self.serial_dev_path]
-            self.servo = DynamixelDriver(ids, port=serial_dev_path)
+            if serlf.serial_dev_path in in_use:
+                logger.error(f'Path {dev_path} already in use, using None.')
+                self.servo = None
+            else:
+                in_use += [self.serial_dev_path]
+                self.servo = DynamixelDriver(ids, port=serial_dev_path)
         elif self.warn:
             logger.warning("NO SERIAL DEVICE FOUND! I/O TO VACUUM!")
             self.servo = None
@@ -695,7 +699,7 @@ class ARMCommunicator(Communicator):
         })
 
     @staticmethod
-    def list_arm_device_paths(id_serial_short) -> Optional['path']:
+    def list_arm_device_paths(ID_SERIAL_SHORT) -> Optional['path']:
         """Guess a port for the arm with `udevadm`.
 
         Note: this function is for UNIX-like systems only!
@@ -721,7 +725,7 @@ class ARMCommunicator(Communicator):
                      if not path.startswith(UART_PREFIX_LIST)
                      if run(['/bin/bash', '-c', id_cmd % path],
                             stdout=PIPE).stdout.decode().strip() \
-                                == id_serial_short]
+                                == ID_SERIAL_SHORT]
 
         return dev_paths or [None]
 
@@ -771,8 +775,52 @@ class ARMCommunicator(Communicator):
 
 class SPMCommunicator(Communicator):
 
-    def __init__(self):
-        pass
+    def __init__(self, config, serial_dev_path, warn=True, in_use=None):
+        self.config = config
+        self.serial_dev_path = serial_dev_path
+        self.in_use = in_use
+
+        self.warn = warn
+
+        if self.serial_dev_path is not None:
+            if self.serial_dev_path in in_use:
+                logger.error(f'Path {serial_dev_path} already in use, using None.')
+            else:
+                in_use += [self.serial_dev_path]
+        elif self.warn:
+            logger.warning("NO SERIAL DEVICE FOUND! I/O TO VACUUM!")
+        logger.debug(f'I ({self.__class__=}) am using .')
+
+        self.spm_state = StateDict(**{})
+
+    @staticmethod
+    def list_spm_device_paths(ID_USB_SERIAL) -> Optional['path']:
+        """Guess a port for the spacemouse with `udevadm`.
+
+        Note: this function is for UNIX-like systems only!
+
+        Linux: look under "/dev/input/by-id"
+
+        Returns:
+            [Maybe dev_paths] : a list of possible device paths
+        """
+        # Exclude UARTs
+        id_cmd = "udevadm info -q property '%s' | awk -F= '/^ID_USB_SERIAL/ { print $2 }'"
+        # list of possible prefixes
+        dev_basename = '/dev/input/by-id'
+        add_basename = functools.partial(os.path.join, dev_basename)
+        try:
+            path_list = map(add_basename, os.listdir(dev_basename))
+        except FileNotFoundError:
+            path_list = []
+
+        dev_paths = [path
+                     for path in path_list
+                     if run(['/bin/bash', '-c', id_cmd % path],
+                            stdout=PIPE).stdout.decode().strip() \
+                                == ID_USB_SERIAL]
+
+        return dev_paths or [None]
 
     def start_listening(self) -> None:
         pass
@@ -781,16 +829,21 @@ class SPMCommunicator(Communicator):
         pass
 
     def is_valid(self) -> bool:
-        pass
+        port = self.get_port()
+        return os.path.exists(port)
 
     def is_vacuum(self) -> bool:
-        pass
+        return not self.is_valid()
 
     def is_alive(self) -> bool:
-        pass
+        port = self.get_port()
+        if self.is_valid():
+            return True
+        else:
+            raise MiniPCCommunicationError(f'{port} no longer exists.')
 
     def get_port(self) -> Optional['path']:
-        pass
+        return self.serial_dev_path
 
     def create_and_send_packet(self, cmd_id, data) -> None:
         pass
@@ -802,7 +855,8 @@ class SPMCommunicator(Communicator):
         pass
 
     def read_out(self) -> dict:
-        pass
+        if self.is_alive():
+            return self.spm_state.deepcopy()
 
 
 if __name__ == '__main__':

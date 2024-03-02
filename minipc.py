@@ -242,7 +242,7 @@ class UnifiedCommunicator:
         elif self.is_arm(dev_type):
             return ARMCommunicator(in_use=self.in_use, *args, **kwargs)
         elif self.is_spm(dev_type):
-            return UARTCommunicator(in_use=self.in_use, *args, **kwargs)
+            return SPMCommunicator(in_use=self.in_use, *args, **kwargs)
 
 
     def _create_packet_dev(
@@ -432,7 +432,9 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
                         ARMCommunicator.list_arm_device_paths(
                             config.ARM_ID_SERIAL_SHORT)) - known_paths
             if SPM in UC.id_queue:
-                spm_paths = set() - known_paths
+                spm_paths = set(
+                        SPMCommunicator.list_spm_device_paths(
+                            config.SPM_ID_USB_SERIAL)) - known_paths
 
             paths = set.union(arm_paths, spm_paths)
             for dt, pth in itertools.chain(

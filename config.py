@@ -43,6 +43,8 @@ DATA_OFFSET = CMD_ID_OFFSET + 1
 
 # `udevadm` short serial id of the small arm motors
 ARM_ID_SERIAL_SHORT = 'FT8ISULT'  # /dev/serial/by-id
+# `udevadm` usb serial id of the spacemouse
+SPM_ID_USB_SERIAL = '3Dconnexion_SpaceMouse_Compact'  # /dev/input/by-id/*
 
 
 # UART > 0, USB <= 0
