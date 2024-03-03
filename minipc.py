@@ -651,7 +651,7 @@ def main(args):
         exit(0)
 
     mode = get_code(args.mode)
-    logger.info(f'Runmode {runmode}')
+    logger.info(f'Runmode {mode}')
 
     # Program
     match mode:
