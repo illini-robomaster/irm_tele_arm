@@ -37,7 +37,7 @@ from config import DeviceType
 
 from util import colorlog as cl
 from util.ansi import *
-from util.matchall import MatchAll
+from util.matching import MatchAll
 from util.atomiclist import AtomicList
 
 from communication import tests

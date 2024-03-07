@@ -6,33 +6,35 @@ from enum import Enum
 if __name__ == '__main__':
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from util.ansi import *
+from util.matching import MatchIn
 from util.timedinput import timedinput, TimedOut
 
 class NothingEnum(Enum):
     """Does not match MenuCode."""
     NOTHING = None
 
-# TODO: Include both parameters
 class MenuCode(Enum):
     """Menu codes."""
-    ARMONLY = '1'
-    SPMONLY = '2'
-    BOTHA = '3'
-    BOTHS = '4'
+    # (str, int, message)
+    # message can also be matched :)
+    USEDEFAULT = ('d', '0', 'Use default')
+    ARMONLY = ('a', '1', 'Arm only')
+    SPMONLY = ('s', '2', 'Spacemouse only')
+    BOTHA = ('ba', '3', 'Both, arm priority')
+    BOTHS = ('bs', '4', 'Both, spacemouse priority')
 
-    TESTL = '11'
-    TESTP = '12'
-    TESTC = '13'
+    TESTL = ('tl', '11', 'Run latency test')
+    TESTP = ('tp', '12', 'Run pingpong test')
+    TESTC = ('tc', '13', 'Run crc test')
 
-    EXIT130 = '130'
+    EXIT130 = ('r', '130', 'Exit with code 130')
 
 NOTHING = NothingEnum.NOTHING
-
+USEDEFAULT = MenuCode.USEDEFAULT
 ARMONLY = MenuCode.ARMONLY
 SPMONLY = MenuCode.SPMONLY
 BOTHA = MenuCode.BOTHA  
 BOTHS = MenuCode.BOTHS  
-
 TESTL = MenuCode.TESTL
 TESTP = MenuCode.TESTP
 TESTC = MenuCode.TESTC
@@ -40,50 +42,68 @@ EXIT130 = MenuCode.EXIT130
 
 DEFAULT = ARMONLY
 
-def get_code(x, timedout=DEFAULT, default=DEFAULT, none=NOTHING):
+def get_code(x, timedout=DEFAULT, default=DEFAULT,
+                unknown=DEFAULT, none=NOTHING):
     # Fall through
     if isinstance(x, MenuCode):
         return x
-    match x:
-        case 'a' | ARMONLY.value:
-            ret = ARMONLY
-        case 's' | SPMONLY.value:
-            ret = SPMONLY
-        case 'ba' | BOTHA.value:
-            ret = BOTHA
-        case 'bs' | BOTHS.value:
-            ret = BOTHS
-        case 'tl' | TESTL.value:
-            ret = TESTL
-        case 'tp' | TESTP.value:
-            ret = TESTP
-        case 'tc' | TESTC.value:
-            ret = TESTC
-        case 'r' | EXIT130.value:
-            ret = EXIT130
-        case None:
-            ret = none
-        case TimedOut():
-            ret = timedout
-        case _:
+    match MatchIn(x):
+        case USEDEFAULT.value:
             ret = default
+        case ARMONLY.value:
+            ret = ARMONLY
+        case SPMONLY.value:
+            ret = SPMONLY
+        case BOTHA.value:
+            ret = BOTHA
+        case BOTHS.value:
+            ret = BOTHS
+        case TESTL.value:
+            ret = TESTL
+        case TESTP.value:
+            ret = TESTP
+        case TESTC.value:
+            ret = TESTC
+        case EXIT130.value:
+            ret = EXIT130
+        case _:
+            ret = NOTHING
+    if ret is NOTHING:
+        match x:
+            case None:
+                ret = none
+            case TimedOut():
+                ret = timedout
+            case _:
+                ret = unknown
     return ret
 
 # Show menu
 def menu() -> MenuCode:
-    ds = f'{RED}[DEFAULT]{RESET}'
-    dr = f'{YELLOW}[reload daemon]{RESET}'
     print('==> Menu')
-    print(f'=> {GREEN}a{RESET}  or {BLUE}{ARMONLY.value}{RESET}: Arm only', ds)
-    print(f'=> {GREEN}s{RESET}  or {BLUE}{SPMONLY.value}{RESET}: Spacemouse only')
-    print(f'=> {GREEN}ba{RESET} or {BLUE}{BOTHA.value}{RESET}: Both, arm priority')
-    print(f'=> {GREEN}bs{RESET} or {BLUE}{BOTHS.value}{RESET}: Both, spacemouse priority')
-    print()
-    print(f'=> {GREEN}tl{RESET} or {BLUE}{TESTL.value}{RESET}: Run latency test')
-    print(f'=> {GREEN}tp{RESET} or {BLUE}{TESTP.value}{RESET}: Run pingpong test')
-    print(f'=> {GREEN}tc{RESET} or {BLUE}{TESTC.value}{RESET}: Run crc test')
-    print()
-    print(f'=> {YELLOW}r{RESET} or {BLUE}{EXIT130.value}{RESET}: exit(130)', dr)
+    # Decorate menu entries
+    for mc in MenuCode:
+        # Newlines for each section
+        if mc in (TESTL, EXIT130):
+            print()
+        # End strings
+        if mc == DEFAULT:
+            # tail <- default notice
+            es = f'{RED}[DEFAULT]{RESET}'
+        elif mc == EXIT130:
+            # tail <- exit notice
+            es = f'{YELLOW}[reload daemon]{RESET}'
+        else:
+            es = ''
+        # Color of str
+        if mc == EXIT130:
+            col = YELLOW
+        else:
+            col = GREEN
+
+        s, n, m = mc.value
+        print(f'=> {col}{s:<2}{RESET} or {BLUE}{n:<3}{RESET}\t{m}', es)
+
     print('==> Hint: you use these codes on the previous menu.')
     choice = get_code(input('=> '))
 
@@ -91,9 +111,9 @@ def menu() -> MenuCode:
 
 def timedmenu() -> MenuCode:
     # Exit on timeout
-    print('==> Falling to default in one second...')
+    print(f'==> Falling to default ({BLUE}{DEFAULT}{RESET}) in one second...')
     response = timedinput(1, f'=> ({GREEN}RETURN{RESET} to enter menu) ')
-    code = get_code(response, default=NOTHING)
+    code = get_code(response, timedout=DEFAULT, unknown=NOTHING)
     # Or do something if the code is valid
     if code in MenuCode:
         return code
