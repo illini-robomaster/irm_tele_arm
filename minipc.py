@@ -159,6 +159,7 @@ class UnifiedCommunicator:
                  unified_state,):
         self.config = config
         self.in_use = in_use
+        self.logger = logger
         self.id_queue = id_queue
         self.send_queue = send_queue
         self.listen_queue = listen_queue
