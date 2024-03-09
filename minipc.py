@@ -434,7 +434,7 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
             if SPM in UC.id_queue:
                 spm_paths = set(
                         SPMCommunicator.list_spm_device_paths(
-                            config.SPM_ID_USB_SERIAL)) - known_paths
+                            config.SPM_ID_SERIAL)) - known_paths
 
             paths = set.union(arm_paths, spm_paths)
             for dt, pth in itertools.chain(

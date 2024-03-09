@@ -794,7 +794,7 @@ class SPMCommunicator(Communicator):
         self.spm_state = StateDict(**{})
 
     @staticmethod
-    def list_spm_device_paths(ID_USB_SERIAL) -> Optional['path']:
+    def list_spm_device_paths(ID_SERIAL) -> Optional['path']:
         """Guess a port for the spacemouse with `udevadm`.
 
         Note: this function is for UNIX-like systems only!
@@ -805,7 +805,7 @@ class SPMCommunicator(Communicator):
             [Maybe dev_paths] : a list of possible device paths
         """
         # Exclude UARTs
-        id_cmd = "udevadm info -q property '%s' | awk -F= '/^ID_USB_SERIAL/ { print $2 }'"
+        id_cmd = "udevadm info -q property '%s' | awk -F= '/^ID_SERIAL/ { print $2 }'"
         # list of possible prefixes
         dev_basename = '/dev/input/by-id'
         add_basename = functools.partial(os.path.join, dev_basename)
@@ -818,7 +818,7 @@ class SPMCommunicator(Communicator):
                      for path in path_list
                      if run(['/bin/bash', '-c', id_cmd % path],
                             stdout=PIPE).stdout.decode().strip() \
-                                == ID_USB_SERIAL]
+                                == ID_SERIAL]
 
         return dev_paths or [None]
 
@@ -833,7 +833,8 @@ class SPMCommunicator(Communicator):
         return os.path.exists(port)
 
     def is_vacuum(self) -> bool:
-        return not self.is_valid()
+        # This should never be a vacuum.
+        return False
 
     def is_alive(self) -> bool:
         port = self.get_port()
