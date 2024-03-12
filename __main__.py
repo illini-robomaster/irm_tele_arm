@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-from sys import argv
 
 from minipc import main, minipc_parser
 
@@ -10,9 +9,6 @@ from communication.menu import timedmenu
 
 if __name__ == '__main__':
     #print(dir())
-    # Remove first arg if called with python.
-    _sl = slice(2, None) if 'python' in argv[0] \
-        else slice(1, None)
     """ Items in parsed_args:
     parsed_args.verbosity: {DEBUG, INFO, WARNING, ERROR, CRITICAL}
                                                       (default WARNING,
@@ -36,14 +32,13 @@ if __name__ == '__main__':
                     action='store_true',
                     help='display the menu')
 
-    parsed_args = ap.parse_args(argv[_sl])
+    parsed_args = ap.parse_args()
 
     try:
         if parsed_args.display_menu:
             choice = timedmenu()
             print(f'=> Selected {BLUE}{choice}{RESET}')
             parsed_args.mode = choice
-
         main(parsed_args)
     except KeyboardInterrupt:
         exit(130)

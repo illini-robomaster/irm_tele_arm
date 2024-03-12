@@ -19,7 +19,6 @@ To change functionality:
       `communication/menu.py' accordingly. Document in the epilog of
       `__main__.py`.
 """
-import sys
 import time
 import serial
 import logging
@@ -682,11 +681,8 @@ def main(args):
 
 if __name__ == '__main__':
     #print(dir())
-    # Remove first arg if called with python.
-    _sl = slice(2, None) if 'python' in sys.argv[0] \
-        else slice(1, None)
     ap = minipc_parser()
-    parsed_args = ap.parse_args(sys.argv[_sl])
+    parsed_args = ap.parse_args()
     try:
         main(parsed_args)
     except KeyboardInterrupt:

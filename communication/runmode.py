@@ -24,7 +24,19 @@ def example(UC):
         time.sleep(1)
 
 def arm_only(UC):
-    example(UC)
+    BRD = UC.BRD
+    ARM = UC.ARM
+
+    hz = 120
+    cmd_id = UC.config.ARM_CMD_ID
+    while True:
+        try:
+            data = UC.unified_state[ARM]
+            packet = UC.create_packet(BRD, cmd_id, data)
+            UC.push_to_send_queue(BRD, packet)
+        except Exception:
+            pass
+    time.sleep(1 / hz)
 
 def spm_only(UC):
     example(UC)
