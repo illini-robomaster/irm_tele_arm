@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """To add a test:
-    - Add test into `communication/tests.py'.
+    - Add code into `communication/tests.py'.
     - Include the test in `startup_tests` in `minipc.py'.
     - Add the test into the argparse in `minipc.py` and add an octal
       identification number. Document in the epilog in `minipc.py` and

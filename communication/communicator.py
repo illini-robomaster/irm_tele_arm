@@ -676,7 +676,7 @@ class ARMCommunicator(Communicator):
         ids = [1, 2, 3, 4, 5, 6]
 
         if self.serial_dev_path is not None:
-            if serlf.serial_dev_path in in_use:
+            if self.serial_dev_path in in_use:
                 logger.error(f'Path {dev_path} already in use, using None.')
                 self.servo = None
             else:

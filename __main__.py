@@ -8,8 +8,7 @@ from util.ansi import *
 from communication.menu import timedmenu
 
 if __name__ == '__main__':
-    #print(dir())
-    """ Items in parsed_args:
+    """Items in parsed_args:
     parsed_args.verbosity: {DEBUG, INFO, WARNING, ERROR, CRITICAL}
                                                       (default WARNING,
                                                        w/o arg. INFO)
@@ -19,6 +18,7 @@ if __name__ == '__main__':
     parsed_args.mode: str
     parsed_args.display_menu: boolean
     """
+    #print(dir())
     parent_ap = minipc_parser()
     ap = argparse.ArgumentParser(
         parents=[parent_ap],
