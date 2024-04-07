@@ -6,6 +6,8 @@ Have the following on your system:
 - `udevadm`
 - `systemd` [Recommended]
 - `tmux` [Recommended]
+- `make`
+- `arduino-cli`
 
 
 Get under your cloned directory.
@@ -22,7 +24,7 @@ Get under your cloned directory.
     ```sh
     sudo usermod -aG uucp $USER
     ```
-2. Modify the `*_ID_SERIAL_SHORT` variable(s) in `config.py` based on your the serial id(s) of your device(s). To find the id of a device on `/path/to/serial`, run
+2. Modify the `*_ID_SERIAL(_SHORT)?` variable(s) in `config.py` based on your the serial id(s) of your device(s). To find the id of a device on `/path/to/serial`, run
     ```sh
     udevadm info -q property '/path/to/serial' | awk -F= '/^ID_SERIAL_SHORT/ { print $2 }'
     ```
@@ -37,10 +39,13 @@ Get under your cloned directory.
     ```
     for an interactive installation.
 
+5. To set up Arduino compilation/upload via the Makefile, run `set-up-arduino.sh`.
+
 ## Usage
+### Python
 For options, run
 ```sh
-python3 main.py -h
+python3 python/main.py -h
 ```
 Assuming you have set up the tmux daemon in the previous section (read the help first!),
 ```sh
@@ -64,10 +69,24 @@ do what you expect, and
 systemctl --user reload minipctd.service
 ```
 sends Ctrl+c (`C-c`) to the tmux session, which the job control handles by restarting `main.py` (after a one second delay). This means in the tmux session you can restart `main.py` manually with `C-c`. The one second delay is to wait for possible user input, in which case the user is dropped into a control menu.
+### Arduino
+Make sure `set-up-arduino.sh` has been run before continuing.
+```sh
+# Compile every sketch under Arduino/tele_arm/
+make
+# Compile `arm_only'.
+# In general: `make <sketch name>'.
+make arm_only
+# Upload `arm_only' without recompiling.
+# In general: `make upload-<sketch name>'.
+make upload-arm_only
+# Compile and upload `arm_only'.
+# In general: `make compile-upload-<sketch name>'.
+make compile-upload-arm_only
+```
 
 ## Reminders
 1. Hardware
-- If you are using something other than STM32 STLink you may have to modify the `UART_PREFIX_LIST` variable in `Communication/communicator.py`
 - The `uucp` group does not seem to work with `/dev/serial/by-id` (at least for me).
 2. Init
 - If you do not use systemd, you may have to find a replacement for `udevadm` and modify `Communication/communicator.py` accordingly.
