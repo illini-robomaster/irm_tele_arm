@@ -1,4 +1,2 @@
-pylint
 pyserial
 crc
-numpy
