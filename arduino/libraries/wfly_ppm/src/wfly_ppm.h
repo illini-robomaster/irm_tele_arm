@@ -29,6 +29,11 @@
 #define ON 1
 #define OFF ~ON
 
+static uint32_t ppm[CHANNELS];
+static uint8_t current_channel;
+static uint32_t time_elapsed;
+static bool state;
+
 void TC4_Handler(void);
 
 namespace wfly_ppm {

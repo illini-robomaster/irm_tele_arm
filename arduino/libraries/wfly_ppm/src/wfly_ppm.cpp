@@ -22,20 +22,15 @@
 
 #include "wfly_ppm.h"
 
-uint32_t ppm[CHANNELS];
-uint8_t current_channel;
-uint32_t time_elapsed;
-bool state;
-
 using namespace wfly_ppm;
 
 void TC4_Handler(void) {
   if (state) {
-    digitalWrite(SIGPIN, ON);
+    digitalWrite(SIGPIN, state);
     // Set wait to PPM_PULSE_LEN microseconds.
     TC4->COUNT32.CC[0].reg = (uint32_t) PPM_PULSE_LEN * MICROSECOND_SCALAR;
   } else {
-    digitalWrite(SIGPIN, OFF);
+    digitalWrite(SIGPIN, state);
     // Set wait:
     if (current_channel > CHANNELS) {
       // to the end of the frame and reset.

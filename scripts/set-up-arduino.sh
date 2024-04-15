@@ -13,7 +13,7 @@ EOF
 script_name=$(basename "$0")
 script_file=$(realpath "$0")
 script_dir=$(realpath "${script_file}" | xargs dirname)
-arduino_dir=$(dirname ${script_dir})/Arduino
+arduino_dir=$(dirname ${script_dir})/arduino
 arduino_conf="${arduino_dir}"/arduino-cli.yaml
 
 arduino_data="${arduino_dir}"/.arduino15

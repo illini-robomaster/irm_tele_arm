@@ -17,14 +17,14 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.  #
 #                                                                        #
 # ---------------------------------------------------------------------- #
-BUILD_DIR = build/Arduino
-SRC_DIR = Arduino/tele_arm/
+BUILD_DIR = build/arduino
+SRC_DIR = arduino/tele_arm/
 BOARD = OpenRB-150:samd:OpenRB-150
-CONF = Arduino/arduino-cli.yaml
+CONF = arduino/arduino-cli.yaml
 ACC := arduino-cli --config-file $(CONF) compile --fqbn $(BOARD) --build-path $(BUILD_DIR)
 AUP := arduino-cli --config-file $(CONF) upload --fqbn $(BOARD) --input-file
 
-paths = $(wildcard Arduino/tele_arm/*)
+paths = $(wildcard arduino/tele_arm/*)
 sketches = $(notdir $(paths:%/=%))
 
 all: $(sketches)
@@ -42,4 +42,4 @@ compile-upload-$(sketches):
 
 .PHONY: clean
 clean:
-	rm -rf build/Arduino/*
+	rm -rf $(BUILD_DIR)/*

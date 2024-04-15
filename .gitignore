@@ -25,5 +25,5 @@ ros_workspace/log/
 tags
 
 # Arduino configuration
-Arduino/arduino-cli.yaml
-Arduino/.arduino15
+arduino/arduino-cli.yaml
+arduino/.arduino15
