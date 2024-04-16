@@ -54,7 +54,7 @@ const std::map<uint8_t, std::pair<float, float>> MIN_MAX_ANGLES = {
 
 // If there are unused spaces between channels fill those positions with `bad'
 // (unused/invalid) ids. They will automatically be masked and its
-// corresponding angle from STARTUP_ANGLES will be sent.
+// corresponding (clamped) angle from STARTUP_ANGLES will be sent.
 const std::vector<uint8_t> DXL_IDS = {0, 1, 2, 3, 4, 5};
 // Note: Masking an id freezes its value.
 //       Masking an id does not skip instances of disabling torque/led.
@@ -121,7 +121,10 @@ void setup() {
 
     counter++;
     if (!mask[DXL_ID]) {
-      angles[counter] = STARTUP_ANGLES.at(DXL_ID);
+      angles[counter] = wfly_ppm::clamp(
+        STARTUP_ANGLES.at(DXL_ID),
+        MIN_MAX_ANGLES.at(DXL_ID).first,
+        MIN_MAX_ANGLES.at(DXL_ID).second);
       continue;
     } else if (counter > SERVOS - 1) continue;
 
