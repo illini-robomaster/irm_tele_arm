@@ -144,8 +144,8 @@ void loop() {
   counter = -1;
   for (const uint8_t& DXL_ID : DXL_IDS) {
       counter++;
-      if (counter > SERVOS - 1) continue;
-      else if (!mask[DXL_ID]) continue;
+      if (!mask[DXL_ID]) continue;
+      else if (counter > SERVOS - 1) continue;
 
       angles[counter] = dxl.getPresentPosition(DXL_ID, UNIT_DEGREE);
   }
