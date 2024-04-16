@@ -25,13 +25,21 @@
 using namespace wfly_ppm;
 
 void TC4_Handler(void) {
+  // Wait for frame to end.
+  if (!enabled && current_channel == 0) {
+    ppm_delay = PPM_FRAME_LEN;
+    TC4->COUNT32.CC[0].reg = ppm_delay;
+    return;
+  }
+
   digitalWrite(SIGPIN, state);
+
   if (state) {
     // Set wait to PPM_PULSE_LEN microseconds.
     ppm_delay = PPM_PULSE_LEN * MICROSECOND_SCALAR;
   } else {
     // Set wait:
-    if (current_channel > CHANNELS) {
+    if (current_channel > CHANNELS - 2) {
       // to the end of the frame and reset.
       ppm_delay = (PPM_FRAME_LEN -
                    PPM_PULSE_LEN -
@@ -54,22 +62,24 @@ WFly::WFly() {};
 void WFly::init() {
   current_channel = 0;
   time_elapsed = 0;
-  state = ON;
+  enabled = false;
+  state = OFF;
 
   initialize_pins();
   initialize_gclk();
 }
 
-void disable_ppm() {
-  TC4->COUNT32.CTRLA.reg &= ~TC_CTRLA_ENABLE;   // Disable TC4
-  while (TC4->COUNT32.STATUS.bit.SYNCBUSY);     // Wait for synchronization
-  TC4->COUNT32.CTRLA.reg = TC_CTRLA_SWRST;      // Reset TC4
-  while (TC4->COUNT32.CTRLA.bit.SWRST);         // Wait for synchronization
+void WFly::disable_ppm() {
+  enabled = false;
 }
 
-void enable_ppm() {
-  TC4->COUNT32.CTRLA.reg |= TC_CTRLA_ENABLE;  // Enable TC4
-  while (TC4->COUNT32.STATUS.bit.SYNCBUSY);   // Wait for synchronization
+void WFly::enable_ppm() {
+  enabled = true;
+}
+
+bool WFly::toggle_ppm() {
+  enabled = ~enabled;
+  return enabled;
 }
 
 void WFly::set(int* data, int len, int offset) {
@@ -98,7 +108,8 @@ void WFly::initialize_gclk() {
   //
   // TC4 Initialisation
   //
-  TC4->COUNT32.CTRLA.reg = TC_CTRLA_MODE_COUNT32 |   // 32-bit timer on TC4
+  TC4->COUNT32.CTRLA.reg = TC_CTRLA_ENABLE |         // Enable TC4
+                           TC_CTRLA_MODE_COUNT32 |   // 32-bit timer on TC4
                            TC_CTRLA_PRESCALER_DIV8;  // Prescaler of 8 -> 0.5us
   while (TC4->COUNT32.STATUS.bit.SYNCBUSY);          // Wait for synchronization
 

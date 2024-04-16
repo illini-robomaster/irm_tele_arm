@@ -33,6 +33,7 @@ static uint32_t ppm[CHANNELS];
 static uint8_t current_channel;
 static uint32_t ppm_delay;
 static uint32_t time_elapsed;
+static bool enabled;
 static bool state;
 
 void TC4_Handler(void);
@@ -58,6 +59,11 @@ class WFly {
    * @brief (Re)enable PPM.
    */
   void enable_ppm();
+
+  /**
+   * @breif Toggle PPM on/off. Returns new state.
+   */
+  bool toggle_ppm();
 
   /**
    * @brief Set the data to send.
