@@ -29,12 +29,12 @@
 #define ON 1
 #define OFF ~ON
 
-static uint32_t ppm[CHANNELS];
-static uint8_t current_channel;
-static uint32_t ppm_delay;
-static uint32_t time_elapsed;
-static bool enabled;
-static bool state;
+//extern uint32_t ppm[CHANNELS];
+//extern uint8_t current_channel;
+//extern uint32_t ppm_delay;
+//extern uint32_t time_elapsed;
+//extern bool enabled;
+//extern bool state;
 
 void TC4_Handler(void);
 
@@ -42,13 +42,38 @@ namespace wfly_ppm {
 
 class WFly {
  public:
-  WFly();
+  /**
+   * @param min_d: Minimum delay to next pulse (in microseconds)
+   *        max_d: Maximum delay to next pulse (in microseconds)
+   *        min_v: Minimum value to send (used in scaling)
+   *        max_v: Maximum value to send (used in scaling)
+   * @note Scaling assumes all data sent to be in the same range per object.
+   *       Data out of range will be clamped.
+   */
+  WFly(uint32_t min_d, uint32_t max_d, uint32_t min_v, uint32_t max_v);
 
   /**
    * @brief Initialize pins and clock registers.
    * @note Disabled by default; needs to be enabled after initialization.
    */
   void init();
+
+  /**
+   * @brief Convert values between min_v and max_v to delays between
+   *        min_d and max_d. Inserts delays into send buffer.
+   * @param data:   pointer to buffer
+   *        len:    length to retrieve
+   *        offset: ppm[i + offset] = data[i]
+   */
+  void insert(uint32_t* data, int len, int offset = 0);
+
+  /**
+   * @brief Directly modify the send buffer.
+   * @param data:   pointer to buffer
+   *        len:    length to retrieve
+   *        offset: ppm[i + offset] = data[i]
+   */
+  void set_(uint32_t* data, int len = 16, int offset = 0);
 
   /**
    * @brief Disable PPM.
@@ -65,11 +90,6 @@ class WFly {
    */
   bool toggle_ppm();
 
-  /**
-   * @brief Set the data to send.
-   */
-  void set(int* data, int len = 16, int offset = 0);
-
  private:
   /**
    * @brief Initialization helper methods.
@@ -77,6 +97,12 @@ class WFly {
   void initialize_pins();
   void initialize_gclk();
 
+  uint32_t min_d;
+  uint32_t max_d;
+  uint32_t min_v;
+  uint32_t max_v;
+  uint32_t interval_d;
+  uint32_t interval_v;
 }; /* class WFly */
 
 } /* namespace wfly_ppm */

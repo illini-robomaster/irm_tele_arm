@@ -24,6 +24,13 @@
 
 using namespace wfly_ppm;
 
+uint32_t ppm[CHANNELS];
+uint8_t current_channel;
+uint32_t ppm_delay;
+uint32_t time_elapsed;
+bool enabled;
+bool state;
+
 void TC4_Handler(void) {
   // Wait for frame to end.
   if (!enabled && current_channel == 0) {
@@ -57,7 +64,15 @@ void TC4_Handler(void) {
 }
 
 
-WFly::WFly() {};
+WFly::WFly(uint32_t min_d_, uint32_t max_d_,
+           uint32_t min_v_, uint32_t max_v_) {
+  min_d = min_d_;
+  max_d = max_d_;
+  min_v = min_v_;
+  max_v = max_v_;
+  interval_d = max_d - min_d;
+  interval_v = max_v - min_v;
+};
 
 void WFly::init() {
   current_channel = 0;
@@ -67,6 +82,24 @@ void WFly::init() {
 
   initialize_pins();
   initialize_gclk();
+}
+
+void WFly::insert(uint32_t* data, int len, int offset) {
+    uint32_t v;
+  float scalar;  // scalar < 1
+  for (int i = 0; i < len; i++) {
+    // Arduino uses -std=gnu++11, so no std::clamp (c++17).
+    v = data[i];
+    scalar = v < min_v ? min_v : max_v < v ? max_v : v;
+    ppm[offset + i] = (uint32_t) (min_d + scalar * interval_d + 0.5) *
+                                 MICROSECOND_SCALAR;
+  }
+}
+
+void WFly::set_(uint32_t* data, int len, int offset) {
+  for (int i = 0; i < len; i++) {
+    ppm[offset + i] = data[i];
+  }
 }
 
 void WFly::disable_ppm() {
@@ -80,12 +113,6 @@ void WFly::enable_ppm() {
 bool WFly::toggle_ppm() {
   enabled = ~enabled;
   return enabled;
-}
-
-void WFly::set(int* data, int len, int offset) {
-  for (int i = 0; i < len; i++) {
-    ppm[offset + i] = data[i];
-  }
 }
 
 void WFly::initialize_pins() {

@@ -21,8 +21,8 @@ BUILD_DIR = build/arduino
 SRC_DIR = arduino/tele_arm/
 BOARD = OpenRB-150:samd:OpenRB-150
 CONF = arduino/arduino-cli.yaml
-ACC := arduino-cli --config-file $(CONF) compile --fqbn $(BOARD) --build-path $(BUILD_DIR)
-AUP := arduino-cli --config-file $(CONF) upload --fqbn $(BOARD) --input-file
+ACC := arduino-cli --verbose --config-file $(CONF) compile --fqbn $(BOARD) --build-path $(BUILD_DIR)
+AUP := arduino-cli --verbose --config-file $(CONF) upload --fqbn $(BOARD) --input-file
 
 paths = $(wildcard arduino/tele_arm/*)
 sketches = $(notdir $(paths:%/=%))
