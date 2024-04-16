@@ -39,7 +39,7 @@ Get under your cloned directory.
     ```
     for an interactive installation.
 
-5. To set up Arduino compilation/upload via the Makefile, run `set-up-arduino.sh`.
+5. To set up Arduino compilation/upload via the Makefile, run `make configure#{,-{,re}setup}`.
 
 ## Usage
 ### Python
@@ -70,8 +70,11 @@ systemctl --user reload minipctd.service
 ```
 sends Ctrl+c (`C-c`) to the tmux session, which the job control handles by restarting `main.py` (after a one second delay). This means in the tmux session you can restart `main.py` manually with `C-c`. The one second delay is to wait for possible user input, in which case the user is dropped into a control menu.
 ### Arduino
-Make sure `set-up-arduino.sh` has been run before continuing.
+Make sure `set-up-arduino.sh` has been run (either manually or with `make configure`) before continuing.
 ```sh
+# Arduino configurtion options
+# See `make configure--h' or `./set-up-arduino.sh -h'.
+make configure#{,-{setup,clean,resetup,update,-h}}
 # Compile every sketch under Arduino/tele_arm/
 make
 # Compile `arm_only'.

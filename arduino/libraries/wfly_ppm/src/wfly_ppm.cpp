@@ -25,28 +25,27 @@
 using namespace wfly_ppm;
 
 void TC4_Handler(void) {
+  digitalWrite(SIGPIN, state);
   if (state) {
-    digitalWrite(SIGPIN, state);
     // Set wait to PPM_PULSE_LEN microseconds.
-    TC4->COUNT32.CC[0].reg = (uint32_t) PPM_PULSE_LEN * MICROSECOND_SCALAR;
+    ppm_delay = PPM_PULSE_LEN * MICROSECOND_SCALAR;
   } else {
-    digitalWrite(SIGPIN, state);
     // Set wait:
     if (current_channel > CHANNELS) {
       // to the end of the frame and reset.
-      TC4->COUNT32.CC[0].reg = (uint32_t) (PPM_FRAME_LEN -
-                                           PPM_PULSE_LEN -
-                                           time_elapsed) * MICROSECOND_SCALAR;
+      ppm_delay = (PPM_FRAME_LEN -
+                   PPM_PULSE_LEN -
+                   time_elapsed) * MICROSECOND_SCALAR;
       current_channel = 0;
       time_elapsed = 0;
     } else {
       // to the next pulse.
-      TC4->COUNT32.CC[0].reg = (uint32_t) (ppm[current_channel] -
-                                           PPM_PULSE_LEN) * MICROSECOND_SCALAR;
+      ppm_delay = (ppm[current_channel] - PPM_PULSE_LEN) * MICROSECOND_SCALAR;
       time_elapsed += ppm[current_channel++];
     }
   }
-  state = ~state;  // Toggle state.
+  TC4->COUNT32.CC[0].reg = ppm_delay;  // Write to register.
+  state = ~state;                      // Toggle state.
 }
 
 

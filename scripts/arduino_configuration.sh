@@ -33,7 +33,7 @@ function setup() {
     notify_update=${2/-}
     if [ -f "${arduino_conf}" ]; then
         echo "${arduino_conf}" already exists.
-        echo Run \`${script_name} clean\` before reinstalling.
+        echo Run \`${script_name} clean\` before rerunning.
         exit 1
     fi
 

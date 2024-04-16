@@ -27,6 +27,8 @@ AUP := arduino-cli --config-file $(CONF) upload --fqbn $(BOARD) --input-file
 paths = $(wildcard arduino/tele_arm/*)
 sketches = $(notdir $(paths:%/=%))
 
+configure = configure-setup configure-clean configure-resetup configure-update configure--h
+
 all: $(sketches)
 
 $(sketches):
@@ -40,6 +42,11 @@ compile-upload-$(sketches):
 	$(MAKE) $(@:compile-upload-%=%)
 	$(MAKE) $(@:compile-%=%)
 
-.PHONY: clean
+.PHONY: clean configure $(arduinoconf)
 clean:
 	rm -rf $(BUILD_DIR)/*
+
+configure: configure-setup
+
+$(configure):
+	@./arduino_configuration.sh $(@:configure-%=%)
