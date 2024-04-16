@@ -65,7 +65,7 @@ void TC4_Handler(void) {
 
 
 WFly::WFly(uint32_t min_d_, uint32_t max_d_,
-           uint32_t min_v_, uint32_t max_v_) {
+           float min_v_, float max_v_) {
   min_d = min_d_;
   max_d = max_d_;
   min_v = min_v_;
@@ -84,19 +84,16 @@ void WFly::init() {
   initialize_gclk();
 }
 
-void WFly::insert(uint32_t* data, int len, int offset) {
-    uint32_t v;
+void WFly::insert(float* data, int len, int offset) {
   float scalar;  // scalar < 1
   for (int i = 0; i < len; i++) {
-    // Arduino uses -std=gnu++11, so no std::clamp (c++17).
-    v = data[i];
-    scalar = v < min_v ? min_v : max_v < v ? max_v : v;
+    scalar = (clamp(data[i], min_v, max_v) - min_v) / interval_v;
     ppm[offset + i] = (uint32_t) (min_d + scalar * interval_d + 0.5) *
                                  MICROSECOND_SCALAR;
   }
 }
 
-void WFly::set_(uint32_t* data, int len, int offset) {
+void WFly::insert(uint32_t* data, int len, int offset) {
   for (int i = 0; i < len; i++) {
     ppm[offset + i] = data[i];
   }
@@ -124,8 +121,8 @@ void WFly::initialize_gclk() {
   //
   // Generic Clock Initialisation
   //
-  GCLK->GENDIV.reg = GCLK_GENDIV_DIV(3) |            // Set clock divisor to 3 -> 48MHz/3 = 16MHz
-                     GCLK_GENDIV_ID(0);              // Select GCLK0
+  GCLK->GENDIV.reg = GCLK_GENDIV_DIV(3) |            // Set clock divisor to 3 -> 48MHz/3 = 16MHz.
+                     GCLK_GENDIV_ID(0);              // Select GCLK0.
                      
   GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN |           // Enable generic clock
                       GCLK_CLKCTRL_GEN_GCLK0 |       // GCLK0 at 48MHz
@@ -136,9 +133,9 @@ void WFly::initialize_gclk() {
   // TC4 Initialisation
   //
   TC4->COUNT32.CTRLA.reg = TC_CTRLA_ENABLE |         // Enable TC4
-                           TC_CTRLA_MODE_COUNT32 |   // 32-bit timer on TC4
-                           TC_CTRLA_PRESCALER_DIV8;  // Prescaler of 8 -> 0.5us
-  while (TC4->COUNT32.STATUS.bit.SYNCBUSY);          // Wait for synchronization
+                           TC_CTRLA_MODE_COUNT32 |   // As 32-bit timer on TC4
+                           TC_CTRLA_PRESCALER_DIV8;  // With prescaler of 8 -> 0.5us.
+  while (TC4->COUNT32.STATUS.bit.SYNCBUSY);          // Wait for synchronization.
 
   //
   // Configure interrupt request
@@ -148,6 +145,6 @@ void WFly::initialize_gclk() {
   NVIC_SetPriority(TC4_IRQn, 0);
   NVIC_EnableIRQ(TC4_IRQn);
 
-  TC4->COUNT32.INTENSET.bit.MC0 = 1;         // Enable the TC4 interrupt request
-  while (TC4->COUNT32.STATUS.bit.SYNCBUSY);  // Wait for synchronization
+  TC4->COUNT32.INTENSET.bit.MC0 = 1;         // Enable the TC4 interrupt request.
+  while (TC4->COUNT32.STATUS.bit.SYNCBUSY);  // Wait for synchronization.
 }

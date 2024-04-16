@@ -29,16 +29,23 @@
 #define ON 1
 #define OFF ~ON
 
-//extern uint32_t ppm[CHANNELS];
-//extern uint8_t current_channel;
-//extern uint32_t ppm_delay;
-//extern uint32_t time_elapsed;
-//extern bool enabled;
-//extern bool state;
+extern uint32_t ppm[CHANNELS];
+extern uint8_t current_channel;
+extern uint32_t ppm_delay;
+extern uint32_t time_elapsed;
+extern bool enabled;
+extern bool state;
 
 void TC4_Handler(void);
 
 namespace wfly_ppm {
+
+// Arduino uses -std=gnu++11. std::clamp is introduced in c++17.
+// Reimplement a simplified version here.
+template<class T>
+const T& clamp(const T& v, const T& lo, const T& hi) {
+  return v < lo ? lo : hi < v ? hi : v;
+}
 
 class WFly {
  public:
@@ -50,7 +57,7 @@ class WFly {
    * @note Scaling assumes all data sent to be in the same range per object.
    *       Data out of range will be clamped.
    */
-  WFly(uint32_t min_d, uint32_t max_d, uint32_t min_v, uint32_t max_v);
+  WFly(uint32_t min_d, uint32_t max_d, float min_v, float max_v);
 
   /**
    * @brief Initialize pins and clock registers.
@@ -65,7 +72,7 @@ class WFly {
    *        len:    length to retrieve
    *        offset: ppm[i + offset] = data[i]
    */
-  void insert(uint32_t* data, int len, int offset = 0);
+  void insert(float* data, int len, int offset = 0);
 
   /**
    * @brief Directly modify the send buffer.
@@ -73,7 +80,7 @@ class WFly {
    *        len:    length to retrieve
    *        offset: ppm[i + offset] = data[i]
    */
-  void set_(uint32_t* data, int len = 16, int offset = 0);
+  void insert(uint32_t* data, int len, int offset = 0);
 
   /**
    * @brief Disable PPM.
@@ -99,8 +106,8 @@ class WFly {
 
   uint32_t min_d;
   uint32_t max_d;
-  uint32_t min_v;
-  uint32_t max_v;
+  float min_v;
+  float max_v;
   uint32_t interval_d;
   uint32_t interval_v;
 }; /* class WFly */
