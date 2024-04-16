@@ -33,7 +33,7 @@ function setup() {
     notify_update=${2/-}
     if [ -f "${arduino_conf}" ]; then
         echo "${arduino_conf}" already exists.
-        echo Run \`${script_name} clean\` before rerunning.
+        echo Run \`${script_name} clean\` before creating a new setup.
         exit 1
     fi
 
@@ -56,7 +56,7 @@ function setup() {
     ${acli} config set directories.data "${arduino_data}"
     echo +++ Setting downloads directory to "${arduino_downloads}"
     ${acli} config set directories.downloads "${arduino_downloads}"
-    echo +++ Add board manager for OpenRB-150 '(at https://raw.githubusercontent.com/ROBOTIS-GIT/OpenRB-150/master/package_openrb_index.json)'
+    echo +++ Add board manager for OpenRB-150 "(at https://raw.githubusercontent.com/ROBOTIS-GIT/OpenRB-150/master/package_openrb_index.json)"
     ${acli} config set board_manager.additional_urls "https://raw.githubusercontent.com/ROBOTIS-GIT/OpenRB-150/master/package_openrb_index.json"
     echo +++ Current config:
     ${acli} config dump
@@ -81,7 +81,7 @@ function clean() {
 function update() {
     if [ ! -f "${arduino_conf}" ]; then
         echo "${arduino_conf}" does not exist.
-        echo Run \`${script_name} setup\` first.
+        echo Run \`${script_name} setup\` before attempting to update.
         exit 1
     fi
     ${acli} update
@@ -92,7 +92,7 @@ metrics=-
 notify_update=-
 function run() {
     type arduino-cli >& /dev/null || {
-        echo 'Exiting: `arduino-cli` is not installed.'
+        echo 'Exiting: `arduino-cli` not found.'
         exit 1
     }
 
