@@ -89,8 +89,7 @@ make compile-upload-arm_only
 ```
 
 ## Reminders
-1. Hardware
-- The `uucp` group does not seem to work with `/dev/serial/by-id` (at least for me).
-2. Init
+1. Init
 - If you do not use systemd, you may have to find a replacement for `udevadm` and modify `Communication/communicator.py` accordingly.
 - If you do not use systemd, the service is trivial (starts, stops and sends `C-c` to a tmux session). Rewriting should be simple. Starting the tmux session manually is also an option. The service file can be found inside the `install` function of `minipc-tmux-daemon-helper.sh`.
+2. Examples for the `Dynamixel2Arduino` library are at `arduino/libraries/Dynamixel2Arduino/UNZIP_ME_FOR_EXAMPLES.zip`. How to retrieve them is currently unkown and requires further study.

@@ -21,9 +21,10 @@ ros_workspace/build/
 ros_workspace/install/
 ros_workspace/log/
 
+# Arduino
+arduino/arduino-cli.yaml
+arduino/.arduino15/
+arduino/libraries/Dynamixel2Arduino/examples/
+
 # CTags
 tags
-
-# Arduino configuration
-arduino/arduino-cli.yaml
-arduino/.arduino15
