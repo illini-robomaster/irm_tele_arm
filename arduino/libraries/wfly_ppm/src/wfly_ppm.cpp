@@ -99,15 +99,15 @@ void WFly::insert(uint32_t* data, int len, int offset) {
   }
 }
 
-void WFly::disable_ppm() {
+void WFly::disable_output() {
   enabled = false;
 }
 
-void WFly::enable_ppm() {
+void WFly::enable_output() {
   enabled = true;
 }
 
-bool WFly::toggle_ppm() {
+bool WFly::toggle_output() {
   enabled = ~enabled;
   return enabled;
 }

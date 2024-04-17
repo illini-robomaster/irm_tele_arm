@@ -83,19 +83,19 @@ class WFly {
   void insert(uint32_t* data, int len, int offset = 0);
 
   /**
-   * @brief Disable PPM.
+   * @brief Disable PPM output.
    */
-  void disable_ppm();
+  void disable_output();
 
   /**
-   * @brief (Re)enable PPM.
+   * @brief (Re)enable PPM output.
    */
-  void enable_ppm();
+  void enable_output();
 
   /**
-   * @breif Toggle PPM on/off. Returns new state.
+   * @breif Toggle PPM output on/off. Returns new state.
    */
-  bool toggle_ppm();
+  bool toggle_output();
 
  private:
   /**

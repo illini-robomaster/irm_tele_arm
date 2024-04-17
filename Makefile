@@ -17,15 +17,24 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.  #
 #                                                                        #
 # ---------------------------------------------------------------------- #
-BUILD_DIR = build/arduino
-SRC_DIR = arduino/tele_arm/
+ARDUINO_DIR=arduino
+BUILD_DIR = build/$(ARDUINO_DIR)
+SRC_DIR = $(ARDUINO_DIR)/tele_arm
+LIB_DIR = $(ARDUINO_DIR)/libraries
 BOARD = OpenRB-150:samd:OpenRB-150
-CONF = arduino/arduino-cli.yaml
+CONF = $(ARDUINO_DIR)/arduino-cli.yaml
 ACC := arduino-cli --verbose --config-file $(CONF) compile --fqbn $(BOARD) --build-path $(BUILD_DIR)
 AUP := arduino-cli --verbose --config-file $(CONF) upload --fqbn $(BOARD) --input-file
 
-paths = $(wildcard arduino/tele_arm/*)
+paths = $(wildcard $(SRC_DIR)/*)
 sketches = $(notdir $(paths:%/=%))
+
+# foo/examples/bar/* -> foo/bar/*
+func_strip_example = $(shell sed 's%\(^\|\s\)\([^/]\+\)/examples%\1\2%g' <<< "$(1)")
+# foo/bar/* -> foo/examples/bar/*
+func_strap_example = $(shell sed 's%\(^\|\s\)\([^/]\+\)%\1\2/examples%g' <<< "$(1)")
+example_paths = $(shell find $(LIB_DIR) -wholename "*/examples/*.ino" | xargs dirname)
+examples = $(call func_strip_example,$(example_paths:$(LIB_DIR)/%=%))
 
 configure = configure-setup configure-clean configure-resetup configure-update configure--h
 
@@ -33,14 +42,26 @@ all: $(sketches)
 
 $(sketches):
 	mkdir -p $(BUILD_DIR)
-	$(ACC) $(SRC_DIR)/$@
+	$(ACC)/$(@) $(SRC_DIR)/$(@)
 
-upload-$(sketches):
-	$(AUP) $(BUILD_DIR)/$(@:upload-%=%).ino.bin
+$(sketches:%=upload-%):
+	$(AUP) $(BUILD_DIR)/$(@:upload-%=%)/$(@:upload-%=%).ino.bin
 
-compile-upload-$(sketches):
+$(sketches:%=compile-upload-%):
 	$(MAKE) $(@:compile-upload-%=%)
 	$(MAKE) $(@:compile-%=%)
+
+example-all: $(examples:%=example-%)
+
+$(examples:%=example-%):
+	$(ACC)/$(call func_strap_example,$(@:example-%=%)) $(LIB_DIR)/$(call func_strap_example,$(@:example-%=%))
+
+$(examples:%=example-upload-%):
+	$(AUP) $(BUILD_DIR)/$(call func_strap_example,$(@:example-upload-%=%))/$(notdir $(@)).ino.bin
+
+$(examples:%=example-compile-upload-%):
+	$(MAKE) example-$(@:example-compile-upload-%=%)
+	$(MAKE) example-$(@:example-compile-%=%)
 
 .PHONY: clean configure $(arduinoconf)
 clean:

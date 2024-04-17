@@ -134,7 +134,7 @@ void setup() {
       MIN_MAX_ANGLES.at(DXL_ID).first,
       MIN_MAX_ANGLES.at(DXL_ID).second);
   }
-  wflyer.enable_ppm();
+  wflyer.enable_output();
 
   USB_SERIAL.println("SETUP END");
 }
