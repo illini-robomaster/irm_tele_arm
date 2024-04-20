@@ -22,21 +22,18 @@
     - Add code into `communication/tests.py'.
     - Include the test in `startup_tests` in `minipc.py'.
     - Add the test into the argparse in `minipc.py` and add an octal
-      identification number. Document in the epilog in `minipc.py` and
-      `__main__.py` (which extends `minipc' argparse).
+      identification number. Document in the epilog in `minipc.py`.
 To add a new device:
-    - Add the DeviceType in `config.py'
-    - Add a communicator in `communication/communicator.py' with `Communicator'
+    - Add the DeviceType in `config.py'.
+    - Add a communicator in `communication/communicator.py' with `*Communicator'
       as its parent.
-    - Modify 'global' variables in `minipc.py' accordingly.
-    - Include it in `serial_devices` in `minipc.py'.
-    - Include it in `UnifiedCommunicator.get_communicator`.
+    - Import it in `minipc.py'.
+    - Modify variables in `minipc.py' accordingly:
+        - NEW = DeviceType.NEW
+        - In `UnifiedCommunicator'.
 To change functionality:
     - Add a runmode in `communication/runmode.py'. Use functionality in
-      UnifiedCommunicator.
-    - Add the test into the argparse in `__main__.py' and modify
-      `communication/menu.py' accordingly. Document in the epilog of
-      `__main__.py`.
+      `main' switch.
 """
 import time
 import serial
@@ -62,21 +59,21 @@ from communication import tests
 from communication import runmode
 from communication.menu import get_code, MenuCode
 from communication.communicator import Communicator, \
-    UARTCommunicator, ARMCommunicator, SPMCommunicator, \
+    UARTCommunicator, ARMCommunicator, SPMCommunicator, PPMCommunicator, \
     StateDict, MiniPCCommunicationError
 
 _mt = MatchAll(True)
 
 # Add loggers here
 loggers = [logger := logging.getLogger(__name__),
-           c_logger := logging.getLogger('communication.communicator'),
-           d_logger := logging.getLogger('thirdparty.dynamixel.driver'),]
+           c_logger := logging.getLogger('communication.communicator'),]
 
 UART = DeviceType.UART
 USB = DeviceType.USB
 BRD = DeviceType.BRD
 SPM = DeviceType.SPM
 ARM = DeviceType.ARM
+PPM = DeviceType.PPM
 
 EMPTY = UARTCommunicator(config, serial_dev_path=False, warn=False)
 
@@ -88,6 +85,7 @@ serial_devices: Dict[DeviceType, Communicator] = {
     BRD: None,
     SPM: None,
     ARM: None,
+    PPM: None,
 }
 
 in_use: List['path'] = AtomicList()
@@ -189,13 +187,16 @@ class UnifiedCommunicator:
         self.BRD = self.config.DeviceType.BRD
         self.SPM = self.config.DeviceType.SPM
         self.ARM = self.config.DeviceType.ARM
+        self.PPM = self.config.DeviceType.PPM
         self.intenum_to_name = {
             UART: 'UART',
             USB: 'USB',
             BRD: 'BOARD',
             SPM: 'SPACEMOUSE',
             ARM: 'ARM',
+            PPM: 'PPM',
         }
+        self.serial_devices = serial_devices
 
 
     # [i]nt[e]num
@@ -214,6 +215,8 @@ class UnifiedCommunicator:
                 return self.ARM
             case SPMCommunicator():
                 return self.SPM
+            case PPMCommunicator():
+                return self.PPM
             case _:
                 return None
 
@@ -243,6 +246,9 @@ class UnifiedCommunicator:
         """Check whether a DeviceType is a SPM"""
         return dev_type == self.SPM
 
+    def is_ppm(self, dev_type: DeviceType) -> bool:
+        """Check whether a DeviceType is a PPM"""
+        return dev_type == self.PPM
 
     def delist_device(self, device: Communicator) -> None:
         """Remove a Communicator's port from the internal list of used ports"""
@@ -261,6 +267,8 @@ class UnifiedCommunicator:
             return ARMCommunicator(in_use=self.in_use, *args, **kwargs)
         elif self.is_spm(dev_type):
             return SPMCommunicator(in_use=self.in_use, *args, **kwargs)
+        elif self.is_ppm(dev_type):
+            return PPMCommunicator(in_use=self.in_use, *args, **kwargs)
 
 
     def _create_packet_dev(
@@ -383,8 +391,7 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
                 continue
             # Look for devices.
             # `list_uart_device_paths` returns a list or [None]
-            paths = set(UARTCommunicator.list_uart_device_paths()) | \
-                    set(ARMCommunicator.list_arm_device_paths()) - known_paths
+            paths = set(UARTCommunicator.list_uart_device_paths()) - known_paths
             for pth in paths - prev_paths - {None}:
                 try:
                     serial_experiments += [UC.get_communicator(
@@ -404,7 +411,10 @@ def _identifier(hz_uart=2, hz_usb=2) -> None:
                     UC._send_packet_dev(dev, packet)
                     UC._receive_uart_packet_dev(dev)
                     received_data = UC._read_packet_dev(dev)
-                    dev_type = received_data['debug_int'] - 127
+                    if received_data['mode'] == 'ID':
+                        dev_type = received_data['debug_int'] - 127
+                    else:
+                        dev_type = -127
                 except Exception:
                     serial_experiments.remove(dev)
                     logger.info(
@@ -596,6 +606,10 @@ def _sender(hz=200):
         return send_queue.take_n(n)
 
     while True:
+        #if (serial_devices[BRD]):
+        #    print(1)
+        #    time.sleep(1)
+        #    UC.create_packet(BRD, config.ARM_CMD_ID, {'floats': {'0':0,'1':1,'2':2,'3':3,'4':4,'5':5,}})
         head = takeone_from_send_queue()
         if head is not None:
             dev_type, packet = head
@@ -651,7 +665,7 @@ def main(args):
     logger.debug(loggers)
 
     # Fork off our communication threads.
-    hz_id = hz_wait = hz_pull = 4
+    hz_id = hz_wait = hz_pull = 8
     identifier_thread = threading.Thread(target=_identifier,
                                          args=(hz_id, hz_id))
     listener_thread = threading.Thread(target=_listener,

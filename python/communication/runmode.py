@@ -9,6 +9,7 @@ def example(UC):
     BRD = UC.BRD
     SPM = UC.SPM
     ARM = UC.ARM
+    PPM = UC.PPM
 
     cmd_id = UC.config.ARM_CMD_ID
     while True:
@@ -24,9 +25,32 @@ def example(UC):
         time.sleep(1)
 
 def arm_only(UC):
-    # Do nothing. Entirely handled by Arduino.
-    hz = 1
+    UART = UC.UART
+    USB = UC.USB
+    BRD = UC.BRD
+    SPM = UC.SPM
+    ARM = UC.ARM
+    PPM = UC.PPM
+
+    hz = 60
+    hz_print = 30
+
+    cmd_id = UC.config.ARM_CMD_ID
+    i = 0;
     while True:
+        try:
+            data = {'floats': UC.unified_state[ARM]['floats']}
+            packet = UC.create_packet(PPM, cmd_id, data)
+            UC.push_to_send_queue(PPM, packet)
+            
+            if i > hz/hz_print:
+                i = 0
+                print(f'=> {hz_print}Hz sample (of {hz}Hz actual):')
+                print('PPM', *UC.unified_state[PPM]['floats'].items())
+                print('BRD', *UC.unified_state[ARM]['floats'].items())
+        except Exception:
+            pass
+        i += 1
         time.sleep(1 / hz)
 
 def spm_only(UC):

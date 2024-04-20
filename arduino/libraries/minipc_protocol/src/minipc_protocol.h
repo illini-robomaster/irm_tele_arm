@@ -32,13 +32,13 @@ typedef struct {
   int32_t *data;
   uint8_t crc8_checksum;
   char tail[2];
-} __packed minipc_data_t;
+} minipc_data_t;
 // This might be not necessary at all
 
 // RED is 0; BLUE is one
 typedef struct {
   uint8_t my_color;
-} __packed color_data_t;
+} color_data_t;
 
 typedef struct {
   float rel_yaw;
@@ -46,23 +46,23 @@ typedef struct {
   // Search Target is 0. Move Yoke is 1.
   uint8_t mode;
   uint8_t debug_int;
-} __packed gimbal_data_t;
+} gimbal_data_t;
 
 typedef struct {
   float vx;
   float vy;
   float vw;
-} __packed chassis_data_t;
+} chassis_data_t;
 
 typedef struct {
   // FLUSH is 0. ECHO is 1. ID is 2.
   uint8_t mode;
   uint8_t debug_int;
-} __packed selfcheck_data_t;
+} selfcheck_data_t;
 
 typedef struct {
   float floats[6];
-} __packed arm_data_t;
+} arm_data_t;
 
 // summary of all information transmitted between minipc and stm32
 typedef struct {
@@ -77,13 +77,13 @@ typedef struct {
   float vy;
   float vw;
   float floats[6];
-} __packed status_data_t;
+} status_data_t;
 
 // GIMBAL_CMD_ID  : 0x00 Autoaim gimbal RelYaw RelPitch
 // COLOR_CMD_ID   : 0x01
 // CHASSIS_CMD_ID : 0x02
 // SELFCHECK_CMD_ID :0x03
-// ARM_CMD-ID     : 0x04
+// ARM_CMD_ID     : 0x04
 // TOTAL_NUM_OF_ID: length of the enum
 enum CMD_ID {GIMBAL_CMD_ID,
              COLOR_CMD_ID,

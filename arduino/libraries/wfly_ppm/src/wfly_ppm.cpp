@@ -17,6 +17,8 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.    *
  *                                                                          *
  ****************************************************************************/
+// DO NOT USE ON OPENRB-150!!!
+// See !!!NOTICE!!!
 
 #include <Arduino.h>
 
@@ -28,14 +30,25 @@ uint32_t ppm[CHANNELS];
 uint8_t current_channel;
 uint32_t ppm_delay;
 uint32_t time_elapsed;
-bool enabled;
+bool enabled = false;
 bool state;
 
+#ifdef SAMD
 void TC4_Handler(void) {
+#elif defined ASR
+ISR(TIMER1_COMPA_vect) {
+  TCNT1 = 0;  // Zero timer.
+#endif
   // Wait for frame to end.
   if (!enabled && current_channel == 0) {
-    ppm_delay = PPM_FRAME_LEN;
+    ppm_delay = PPM_FRAME_LEN * MICROSECOND_SCALAR;
+#ifdef SAMD
     TC4->COUNT32.CC[0].reg = ppm_delay;
+#elif defined ASR
+    OCR1A = ppm_delay;
+#endif
+    // Get data.
+    cli();
     return;
   }
 
@@ -46,50 +59,62 @@ void TC4_Handler(void) {
     ppm_delay = PPM_PULSE_LEN * MICROSECOND_SCALAR;
   } else {
     // Set wait:
-    if (current_channel > CHANNELS - 2) {
+    if (current_channel > CHANNELS - 1) {
       // to the end of the frame and reset.
       ppm_delay = (PPM_FRAME_LEN -
                    PPM_PULSE_LEN -
                    time_elapsed) * MICROSECOND_SCALAR;
       current_channel = 0;
       time_elapsed = 0;
+      // Get data.
+      cli();
     } else {
       // to the next pulse.
       ppm_delay = (ppm[current_channel] - PPM_PULSE_LEN) * MICROSECOND_SCALAR;
       time_elapsed += ppm[current_channel++];
     }
   }
+
+#ifdef SAMD
   TC4->COUNT32.CC[0].reg = ppm_delay;  // Write to register.
-  state = ~state;                      // Toggle state.
+#elif defined ASR
+  OCR1A = ppm_delay;
+#endif
+  state = !state;                      // Toggle state.
 }
 
 
-WFly::WFly(uint32_t min_d_, uint32_t max_d_,
+WFly::WFly(uint32_t min_d_, uint32_t max_d_, uint32_t default_d_,
            float min_v_, float max_v_) {
   min_d = min_d_;
   max_d = max_d_;
+  default_d = default_d_;
   min_v = min_v_;
   max_v = max_v_;
   interval_d = max_d - min_d;
   interval_v = max_v - min_v;
+  for (int i = 0; i < CHANNELS; i++) {
+    ppm[i] = default_d;
+  }
 };
+
 
 void WFly::init() {
   current_channel = 0;
   time_elapsed = 0;
   enabled = false;
-  state = OFF;
+  state = ON;
 
   initialize_pins();
   initialize_gclk();
 }
 
+
 void WFly::insert(float* data, int len, int offset) {
   float scalar;  // scalar < 1
   for (int i = 0; i < len; i++) {
     scalar = (clamp(data[i], min_v, max_v) - min_v) / interval_v;
-    ppm[offset + i] = (uint32_t) (min_d + scalar * interval_d + 0.5) *
-                                 MICROSECOND_SCALAR;
+    ppm[offset + i] = (uint32_t) (min_d + scalar * interval_d + 0.5);
   }
 }
 
@@ -108,7 +133,7 @@ void WFly::enable_output() {
 }
 
 bool WFly::toggle_output() {
-  enabled = ~enabled;
+  enabled = !enabled;
   return enabled;
 }
 
@@ -117,7 +142,18 @@ void WFly::initialize_pins() {
   digitalWrite(SIGPIN, OFF);
 }
 
+// !!!NOTICE!!!
+// WILL BREAK OPENRB-150!!!!
+// Any attempt to modify GCLK register blocks everything including uploading.
+// TO FIX STUCK BOARD 赛博电灯泡:
+//  Flash tele_arm/saveme while pressing reset button at the right time (good luck).
+// TIPS:
+//  Try holding reset down and releasing it when you feel the time is right.
+//  This may rename your device to usb-ARDUINO_LLC*OpenRB*.
+//  This went away (for me) after successfully uploading another sketch.
+
 void WFly::initialize_gclk() {
+#ifdef SAMD
   //
   // Generic Clock Initialisation
   //
@@ -147,4 +183,19 @@ void WFly::initialize_gclk() {
 
   TC4->COUNT32.INTENSET.bit.MC0 = 1;         // Enable the TC4 interrupt request.
   while (TC4->COUNT32.STATUS.bit.SYNCBUSY);  // Wait for synchronization.
+#elif defined ASR
+  cli();
+  // Zero TCCR1 register.
+  TCCR1A = 0;
+  TCCR1B = 0;
+
+  OCR1A = 100;
+
+  TCCR1B |= (1 << WGM12);   // Turn on CTC mode
+  TCCR1B |= (1 << CS11);    // 8 prescaler: 0.5 microseconds at 16 MHz
+  TIMSK1 |= (1 << OCIE1A);  // Enable timer compare interrupt
+  state = ON;
+
+  sei();
+#endif
 }

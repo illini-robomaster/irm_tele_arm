@@ -63,6 +63,8 @@ function setup() {
 
     echo
     echo +++ +++ INSTALL BOARDS
+    echo +++ Install arduino:avr
+    ${acli} core install arduino:avr
     echo +++ Install arduino:samd
     ${acli} core install arduino:samd
     echo +++ Install OpenRB-150:samd

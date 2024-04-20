@@ -41,8 +41,11 @@ DATA_LENGTH_OFFSET = SEQNUM_OFFSET + 2
 CMD_ID_OFFSET = DATA_LENGTH_OFFSET + 1
 DATA_OFFSET = CMD_ID_OFFSET + 1
 
-# `udevadm` short serial id of the small arm motors
-ARM_ID_SERIAL_SHORT = 'FT8ISULT'  # /dev/serial/by-id
+# Prefixes
+CBOARD_PATH = 'usb-STMicroelectronics_STM32_STLink_'
+OPENRB_PATH = 'usb-ROBOTIS_OpenRB-150_'
+AMICRO_PATH = 'usb-Arduino_LLC_Arduino_Micro-'
+UART_DEVICE_PATHS = (CBOARD_PATH, OPENRB_PATH, AMICRO_PATH)
 # `udevadm` usb serial id of the spacemouse
 SPM_ID_SERIAL = '3Dconnexion_SpaceMouse_Compact'  # /dev/input/by-id/*
 
@@ -52,6 +55,7 @@ class DeviceType(IntEnum):
     UART = 1  # reserved for portless uart
     BRD = 2  # board
     ARM = 3  # small arm
+    PPM = 4  # small arm ppm
 
     USB = 0  # reserved for portless uart
     SPM = -1  # spacemouse

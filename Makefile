@@ -17,57 +17,113 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.  #
 #                                                                        #
 # ---------------------------------------------------------------------- #
-ARDUINO_DIR=arduino
-BUILD_DIR = build/$(ARDUINO_DIR)
-SRC_DIR = $(ARDUINO_DIR)/tele_arm
-LIB_DIR = $(ARDUINO_DIR)/libraries
-BOARD = OpenRB-150:samd:OpenRB-150
-CONF = $(ARDUINO_DIR)/arduino-cli.yaml
-ACC := arduino-cli --verbose --config-file $(CONF) compile --fqbn $(BOARD) --build-path $(BUILD_DIR)
-AUP := arduino-cli --verbose --config-file $(CONF) upload --fqbn $(BOARD) --input-file
+SRC_DIR := arduino
+LIB_DIR := $(SRC_DIR)/libraries
+BUILD_DIR := build/$(SRC_DIR)
+CONF := $(SRC_DIR)/arduino-cli.yaml
 
-paths = $(wildcard $(SRC_DIR)/*)
-sketches = $(notdir $(paths:%/=%))
+
+BOARD_DEFAULT := OpenRB-150
+PORT_DEFAULT := __dummy_port__
+
+FQBN_OpenRB-150 := OpenRB-150:samd:OpenRB-150
+PORT_OpenRB-150 := /dev/serial/by-id/usb-ROBOTIS_OpenRB-150_*
+EXTN_OpenRB-150 := bin
+
+FQBN_Micro := arduino:avr:micro
+PORT_Micro := /dev/serial/by-id/usb-Arduino_LLC_Arduino_Micro-*
+EXTN_Micro := hex
+
+
+SOURCES := $(shell find $(SRC_DIR)/* -maxdepth 0 \
+		   		-type d -not -wholename $(LIB_DIR))
+BRDINFO := BOARDINFO
+FQBN =
+PORT =
+EXTN =
+
+CONFIGURE := configure-setup configure-clean configure-resetup configure-update configure--h
+
+ACC = arduino-cli --verbose --config-file $(CONF) \
+	   compile --fqbn $(FQBN) --build-path $(BUILD_DIR)
+AUP = arduino-cli --verbose --config-file $(CONF) \
+	   upload --fqbn $(FQBN) --port $(PORT) --input-file
 
 # foo/examples/bar/* -> foo/bar/*
-func_strip_example = $(shell sed 's%\(^\|\s\)\([^/]\+\)/examples%\1\2%g' <<< "$(1)")
+define STRIP_EXAMPLE
+$(shell sed 's%\(^\|\s\)\([^/]\+\)/examples%\1\2%g' <<< "$(1)")
+endef
 # foo/bar/* -> foo/examples/bar/*
-func_strap_example = $(shell sed 's%\(^\|\s\)\([^/]\+\)%\1\2/examples%g' <<< "$(1)")
-example_paths = $(shell find $(LIB_DIR) -wholename "*/examples/*.ino" | xargs dirname)
-examples = $(call func_strip_example,$(example_paths:$(LIB_DIR)/%=%))
+define STRAP_EXAMPLE
+$(shell sed 's%\(^\|\s\)\([^/]\+\)%\1\2/examples%g' <<< "$(1)")
+endef
 
-configure = configure-setup configure-clean configure-resetup configure-update configure--h
+define GET_BOARD
+$(shell cat $(1)/$(BRDINFO) 2> /dev/null || echo $(BOARD_DEFAULT))
+endef
+
+define SET_PORT
+$(eval PORT = $(shell
+	ls $(PORT_$(call GET_BOARD,$(SRC_DIR)/$(dir $(1)))) >& /dev/null && \
+	udevadm info -q property $(PORT_$(call GET_BOARD,$(SRC_DIR)/$(dir $(1)))) | \
+		awk -F= '$$1=="DEVNAME"{ print $$2; exit; }' || \
+	echo $(PORT_DEFAULT)
+	)
+)
+endef
+
+define SET_EXTN
+$(eval EXTN = $(EXTN_$(call GET_BOARD, $(SRC_DIR)/$(dir $(1)))))
+endef
+
+define SET_FQBN
+$(eval FQBN = $(FQBN_$(call GET_BOARD,$(SRC_DIR)/$(dir $(1)))))
+endef
+
+example_sketches = $(call STRIP_EXAMPLE,$(subst $(LIB_DIR)/,, \
+				$(shell find $(LIB_DIR) -wholename "*/examples/*.ino" | xargs dirname)))
+
+sketches = $(foreach src,$(SOURCES), \
+		   $(shell find $(src)/* -maxdepth 0 -type d | cut -d/ -f2-))
 
 all: $(sketches)
 
+all-example: $(example_sketches:%=example-%)
+
 $(sketches):
-	mkdir -p $(BUILD_DIR)
+	$(call SET_FQBN,$(@))
 	$(ACC)/$(@) $(SRC_DIR)/$(@)
 
 $(sketches:%=upload-%):
-	$(AUP) $(BUILD_DIR)/$(@:upload-%=%)/$(@:upload-%=%).ino.bin
+	$(call SET_FQBN,$(@:upload-%=%))
+	$(call SET_PORT,$(@:upload-%=%))
+	$(call SET_EXTN,$(@:upload-%=%))
+	$(AUP) $(BUILD_DIR)/$(@:upload-%=%)/$(notdir $(@)).ino.$(EXTN)
 
 $(sketches:%=compile-upload-%):
 	$(MAKE) $(@:compile-upload-%=%)
 	$(MAKE) $(@:compile-%=%)
 
-example-all: $(examples:%=example-%)
+$(example_sketches:%=example-%):
+	$(call SET_FQBN,$(LIB_DIR)/$(dir $(1:example-%=%))/$(BRDINFO))
+	$(ACC)/$(call STRAP_EXAMPLE,$(@:example-%=%)) \
+		$(LIB_DIR)/$(call STRAP_EXAMPLE,$(@:example-%=%))
 
-$(examples:%=example-%):
-	$(ACC)/$(call func_strap_example,$(@:example-%=%)) $(LIB_DIR)/$(call func_strap_example,$(@:example-%=%))
+$(example_sketches:%=example-upload-%):
+	$(call SET_FQBN,$(LIB_DIR)/$(dir $(@:example-upload-%=%))/$(BRDINFO))
+	$(call SET_PORT,$(LIB_DIR)/$(dir $(@:example-upload-%=%))/$(BRDINFO))
+	$(call SET_EXTN,$(LIB_DIR)/$(dir $(@:example-upload-%=%))/$(BRDINFO))
+	$(AUP) $(BUILD_DIR)/$(call STRAP_EXAMPLE,$(@:example-upload-%=%))/$(notdir $(@)).ino.$(EXTN)
 
-$(examples:%=example-upload-%):
-	$(AUP) $(BUILD_DIR)/$(call func_strap_example,$(@:example-upload-%=%))/$(notdir $(@)).ino.bin
-
-$(examples:%=example-compile-upload-%):
+$(example_sketches:%=example-compile-upload-%):
 	$(MAKE) example-$(@:example-compile-upload-%=%)
 	$(MAKE) example-$(@:example-compile-%=%)
 
-.PHONY: clean configure $(arduinoconf)
+.PHONY: clean configure $(ARDUINOCONF)
 clean:
 	rm -rf $(BUILD_DIR)/*
 
 configure: configure-setup
 
-$(configure):
-	@./arduino_configuration.sh $(@:configure-%=%)
+$(CONFIGURE):
+	@./arduino_configuration.sh $(@:CONFIGURE-%=%)

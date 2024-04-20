@@ -17,10 +17,13 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.    *
  *                                                                          *
  ****************************************************************************/
+// DO NOT USE ON OPENRB-150!!!
+
+#define ASR
 
 // In microseconds
-#define PPM_FRAME_LEN 22500
-#define PPM_PULSE_LEN 300
+#define PPM_FRAME_LEN 35000
+#define PPM_PULSE_LEN 200
 // Counter will be in 0.5 microsecond intervals
 #define MICROSECOND_SCALAR 2
 // PPM settings
@@ -36,7 +39,10 @@ extern uint32_t time_elapsed;
 extern bool enabled;
 extern bool state;
 
+#ifdef SAMD 
 void TC4_Handler(void);
+#elif defined ASR
+#endif
 
 namespace wfly_ppm {
 
@@ -57,7 +63,8 @@ class WFly {
    * @note Scaling assumes all data sent to be in the same range per object.
    *       Data out of range will be clamped.
    */
-  WFly(uint32_t min_d, uint32_t max_d, float min_v, float max_v);
+  WFly(uint32_t min_d, uint32_t max_d, uint32_t default_d,
+       float min_v, float max_v);
 
   /**
    * @brief Initialize pins and clock registers.
@@ -99,13 +106,17 @@ class WFly {
 
  private:
   /**
-   * @brief Initialization helper methods.
+   * @brief Initialization helper method.
    */
   void initialize_pins();
+  // DO NOT FLASH ON OPENRB-150 - DOES NOT WORK - WILL BREAK OPENRB-150!!!!
+  // Any attempt to modify GCLK register blocks everything including uploading.
+  // TO FIX: Flash saveme while pressing reset button at the right time (good luck).
   void initialize_gclk();
 
   uint32_t min_d;
   uint32_t max_d;
+  uint32_t default_d;
   float min_v;
   float max_v;
   uint32_t interval_d;

@@ -33,13 +33,13 @@ def test_board_latency(uart, logger,
             if not listening:
                 uart.try_read_one()
                 if uart.packet_search():
-                    received_data = uart.get_current_stm32_state()
+                    received_data = uart.get_current_state_dict()
                     received += 1
                 else:
                     time.sleep(1 / hz)
                     continue
             else:
-                received_data = uart.get_current_stm32_state()
+                received_data = uart.get_current_state_dict()
             i = int(received_data['debug_int'])
             try:
                 # debug_int acts as the index
@@ -115,7 +115,7 @@ def test_board_pingpong(uart, logger,
                     time.sleep(1 / hz)
                     continue
             else:
-                received_data = uart.get_current_stm32_state()
+                received_data = uart.get_current_state_dict()
                 i = int(received_data['debug_int'])
                 if i == j:
                     return True
@@ -178,13 +178,13 @@ def test_board_crc(uart, logger,
             if not listening:
                 uart.try_read_one()
                 if uart.packet_search():
-                    received_data = uart.get_current_stm32_state()
+                    received_data = uart.get_current_state_dict()
                     i = int(received_data['debug_int'])
                 else:
                     time.sleep(1 / hz)
                     continue
             else:
-                received_data = uart.get_current_stm32_state()
+                received_data = uart.get_current_state_dict()
             try:
                 # debug_int acts as the index
                 i = int(received_data['debug_int'])

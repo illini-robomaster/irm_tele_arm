@@ -20,8 +20,17 @@
 
 #include "minipc_protocol.h"
 
+#ifdef SAMD
 #include <cstring>
+#elif defined ASR
+#include <string.h>
+#endif
+
+#ifdef SAMD
 #include <memory>
+#elif defined ASR
+#include <memory.h>
+#endif
 
 namespace communication {
 

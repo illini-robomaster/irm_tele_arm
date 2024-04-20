@@ -321,7 +321,7 @@ class UARTCommunicator(Communicator):
 
     @staticmethod
     def list_uart_device_paths(
-            prefixes=('usb-STMicroelectronics_STM32_STLink_',)) -> [Optional['path']]:
+            prefixes=(config.UART_DEVICE_PATHS)) -> [Optional['path']]:
         """Guess the UART device paths and return them.
 
         Note: this function is for UNIX-like systems only!
@@ -472,7 +472,7 @@ class UARTCommunicator(Communicator):
         # Compute checksum
         crc_checksum = self.crc_calculator.checksum(bytes(possible_packet[:packet_len - 3]))
         if crc_checksum != possible_packet[packet_len - 3]:
-            print("Packet received but crc checksum is wrong")
+            #print("Packet received but crc checksum is wrong")
             return None
 
         # Parse data into a dictionary
@@ -663,9 +663,11 @@ class UARTCommunicator(Communicator):
 
 
 class ARMCommunicator(UARTCommunicator):
-    def list_arm_device_paths() -> [Optional['path']]:
-        return super(ARMCommunicator, ARMCommunicator).list_uart_device_paths(
-            ('usb-ROBOTIS_OpenRB-150_',))
+    pass
+
+
+class PPMCommunicator(UARTCommunicator):
+    pass
 
 
 class SPMCommunicator(Communicator):
