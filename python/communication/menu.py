@@ -9,12 +9,16 @@ from util.ansi import *
 from util.matching import MatchIn
 from util.timedinput import timedinput, TimedOut
 
+
 class NothingEnum(Enum):
     """Does not match MenuCode."""
+
     NOTHING = None
+
 
 class MenuCode(Enum):
     """Menu codes."""
+
     # (str, int, message)
     # message can also be matched :)
     USEDEFAULT = ('d', '0', 'Use default')
@@ -29,12 +33,13 @@ class MenuCode(Enum):
 
     EXIT130 = ('r', '130', 'Exit with code 130')
 
+
 NOTHING = NothingEnum.NOTHING
 USEDEFAULT = MenuCode.USEDEFAULT
 ARMONLY = MenuCode.ARMONLY
 SPMONLY = MenuCode.SPMONLY
-BOTHA = MenuCode.BOTHA  
-BOTHS = MenuCode.BOTHS  
+BOTHA = MenuCode.BOTHA
+BOTHS = MenuCode.BOTHS
 TESTL = MenuCode.TESTL
 TESTP = MenuCode.TESTP
 TESTC = MenuCode.TESTC
@@ -42,8 +47,10 @@ EXIT130 = MenuCode.EXIT130
 
 DEFAULT = ARMONLY
 
-def get_code(x, timedout=DEFAULT, default=DEFAULT,
-                unknown=DEFAULT, none=NOTHING):
+
+def get_code(
+    x, timedout=DEFAULT, default=DEFAULT, unknown=DEFAULT, none=NOTHING
+):
     # Fall through
     if isinstance(x, MenuCode):
         return x
@@ -78,6 +85,7 @@ def get_code(x, timedout=DEFAULT, default=DEFAULT,
                 ret = unknown
     return ret
 
+
 # Show menu
 def menu() -> MenuCode:
     print('==> Menu')
@@ -109,6 +117,7 @@ def menu() -> MenuCode:
 
     return choice
 
+
 def timedmenu() -> MenuCode:
     # Exit on timeout
     print(f'==> Falling to default ({BLUE}{DEFAULT}{RESET}) in one second...')
@@ -123,6 +132,7 @@ def timedmenu() -> MenuCode:
         return choice
     except KeyboardInterrupt:
         return EXIT130
+
 
 if __name__ == '__main__':
     print(dir())

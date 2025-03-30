@@ -32,7 +32,7 @@ def arm_only(UC):
     ARM = UC.ARM
     PPM = UC.PPM
 
-    hz = 60
+    hz = 40
     hz_print = 30
 
     cmd_id = UC.config.ARM_CMD_ID

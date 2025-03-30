@@ -34,6 +34,13 @@ FQBN_Micro := arduino:avr:micro
 PORT_Micro := /dev/serial/by-id/usb-Arduino_LLC_Arduino_Micro-*
 EXTN_Micro := hex
 
+FQBN_Nano := arduino:avr:nano
+PORT_Nano := /dev/serial/by-id/usb-1a86_USB_Serial-*
+EXTN_Nano := hex
+
+FQBN_Mega := arduino:avr:mega
+PORT_Mega := /dev/serial/by-id/usb-Arduino_LLC_Arduino_Mega-*
+EXTN_Mega := hex
 
 SOURCES := $(shell find $(SRC_DIR)/* -maxdepth 0 \
 		   		-type d -not -wholename $(LIB_DIR))
@@ -126,4 +133,4 @@ clean:
 configure: configure-setup
 
 $(CONFIGURE):
-	@./arduino_configuration.sh $(@:CONFIGURE-%=%)
+	@./arduino_configuration.sh $(@:configure-%=%)

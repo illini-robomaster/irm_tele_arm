@@ -58,9 +58,9 @@ uint32_t length_;
 
 const float DXL_PROTOCOL_VERSION = 2.0;
 const std::map<uint8_t, float> STARTUP_ANGLES = {
-  {0, 90.0},
-  {1, 140.0},
-  {2, 120.0},
+  {0, 0.0},
+  {1, 160.0},
+  {2, 140.0},
   {3, 120.0},
   {4, 120.0},
   {5, 120.0}
@@ -149,7 +149,7 @@ void calculate_torque_threshold_constants(float* torque_threshold_constants) {
     dxl.ledOff(DXL_ID);
   }
   // Wait until motors are in position.
-  delay(500);
+  delay(1000);
 
   // Get angles relative to horizon.
   get_horizon_angles();
@@ -181,7 +181,7 @@ void calculate_torque_thresholds(float* torque_thresholds) {
 
     // [c]alculated_[t]orque
     c_t = torque_threshold_constants[counter]*cos(level_angles[counter] * M_PI/180);
-    torque_thresholds[counter] = c_t + accum;
+    torque_thresholds[counter] = (c_t + accum);
     accum += c_t;
   }
 }
@@ -233,9 +233,18 @@ void setup() {
       MIN_MAX_ANGLES.at(DXL_ID).second);
   }
 
+  for (auto DXL_ID : DXL_IDS) {
+    set_operating_mode(DXL_ID, OP_CURRENT);
+  }
+
   //USB_SERIAL.println("SETUP END");
 }
 
+//float static_friction = 7.0;
+//float coloumb_friction = 0.06;
+//float pos_comp;
+//float neg_comp;
+//float friction_compensated_current;
 void loop() {
   float pres_v;
   float pres_t;
@@ -248,8 +257,18 @@ void loop() {
     if (counter > SERVOS - 1) break;
     else if (!mask[DXL_ID]) continue;
 
-    if (dxl.getPresentPosition(DXL_ID, UNIT_DEGREE) < MIN_MAX_ANGLES.at(DXL_ID).first ||
-        dxl.getPresentPosition(DXL_ID, UNIT_DEGREE) > MIN_MAX_ANGLES.at(DXL_ID).second) {
+    //pres_v = dxl.getPresentVelocity(DXL_ID);
+    //pos_comp = static_friction + coloumb_friction * pres_v;
+    //neg_comp = -static_friction + coloumb_friction * pres_v;
+    //if (pres_v > 0.0) {
+    //  dxl.setGoalCurrent(DXL_ID, pos_comp);
+    //} else {
+    //  dxl.setGoalCurrent(DXL_ID, neg_comp);
+    //}
+    if (dxl.getPresentPosition(DXL_ID, UNIT_DEGREE) <
+          MIN_MAX_ANGLES.at(DXL_ID).first ||
+        dxl.getPresentPosition(DXL_ID, UNIT_DEGREE) >
+          MIN_MAX_ANGLES.at(DXL_ID).second) {
       dxl.ledOn(DXL_ID);
       set_operating_mode(DXL_ID, OP_CURRENT_BASED_POSITION);
 
@@ -284,15 +303,13 @@ void loop() {
       } else {
         dxl.ledOff(DXL_ID);
         right_half = in_quadrant_I_IV(DXL_ID);
-        if ((!right_half && pres_t < torque_thresholds[counter] - 25) ||
-            (right_half && pres_t > torque_thresholds[counter] + 25)) {
+        if ((right_half &&
+             pres_t < torque_thresholds[counter] - 25) ||
+            (!right_half &&
+              pres_t > torque_thresholds[counter] + 25)) {
           dxl.ledOn(DXL_ID);
           dxl.setGoalPosition(DXL_ID,
-            //clamp(
-                dxl.getPresentPosition(DXL_ID, UNIT_DEGREE),
-            //  MIN_MAX_ANGLES.at(DXL_ID).first,
-            //  MIN_MAX_ANGLES.at(DXL_ID).second),
-            UNIT_DEGREE);
+            dxl.getPresentPosition(DXL_ID, UNIT_DEGREE), UNIT_DEGREE);
           dxl.ledOff(DXL_ID);
         }
         if (abs(pres_v) > 20) {
@@ -312,7 +329,7 @@ void loop() {
     else if (!mask[DXL_ID]) continue;
 
     arm_data.floats[counter] = clamp(
-      dxl.getPresentPosition(DXL_ID, UNIT_DEGREE),
+      dxl.getPresentPosition(DXL_ID, UNIT_DEGREE) - STARTUP_ANGLES.at(DXL_ID),
       MIN_MAX_ANGLES.at(DXL_ID).first,
       MIN_MAX_ANGLES.at(DXL_ID).second);
     //arm_data.floats[counter] = dxl.getPresentCurrent(counter);
@@ -349,16 +366,17 @@ void loop() {
     }
   }
 
-  //arm_data.floats[1] = torque_thresholds[1];
-  //arm_data.floats[2] = torque_thresholds[2];
-  //arm_data.floats[3] = torque_thresholds[3];
-  arm_data.floats[4] = torque_thresholds[2];
-  //arm_data.floats[5] = torque_thresholds[5];
+  //arm_data.floats[0] += 0;
+  //arm_data.floats[1] += 0;
+  //arm_data.floats[2] += 0;
+  //arm_data.floats[3] += 117;
+  //arm_data.floats[4] += -53;
+  //arm_data.floats[5] += -59;
   //arm_data.floats[1] = torque_threshold_constants[2];
   //arm_data.floats[2] = -1*cos(level_angles[2] * M_PI/180);
   //arm_data.floats[3] = level_angles[2];
   //arm_data.floats[4] = torque_threshold_constants[2]*-1*cos(level_angles[2] * M_PI/180);
-  arm_data.floats[5] = dxl.getPresentCurrent(2);
+  //arm_data.floats[5] = dxl.getPresentCurrent(1);
   // Send angles.
   minipc_session.Pack(packet_to_send, (void*)&arm_data, communication::ARM_CMD_ID);
   USB_SERIAL.write(packet_to_send, minipc_session.GetPacketLen(communication::ARM_CMD_ID));
